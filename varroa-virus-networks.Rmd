@@ -7,10 +7,10 @@ output: html_document
 
 ```{r libraries}
 library(tidyverse)
+virusId <- read_tsv("data/viruses.txt", col_names = c("target_id", "description"))
 ```
 
 ```{r import}
-virusId <- read_tsv("data/viruses.txt", col_names = c("target_id", "description"))
 read_kallisto <- function(filename) {
   sampleName <- sub("data/kallisto/(.*).tsv.gz","\\1", filename)
   return(read_tsv(filename) %>%
