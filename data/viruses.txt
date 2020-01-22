@@ -1,0 +1,14 @@
+NC_002548.1	Acute bee paralysis virus
+KY354240.1	Apis Nora virus isolate RI-11
+NC_035071.1	Apis flavivirus isolate RI-A
+KY354234.1	Apis rhabdovirus 2 isolate T-12
+NC_027631.1	Bee Macula-like virus isolate France 878V
+NC_003784.1	Black queen cell virus
+NC_010711.1	Chronic bee paralysis virus RNA 1
+NC_004830.2	Deformed wing virus
+NC_009025.1	Israel acute paralysis virus of bees
+NC_004807.1	Kashmir bee virus
+NC_032433.1	Lake Sinai virus strain WHCC111282
+NC_002066.1	Sacbrood virus
+NC_006494.1	Varroa destructor virus-1
+NC_040601.1	Varroa destructor virus 2 isolate VDV-2

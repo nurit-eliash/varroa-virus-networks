@@ -1,0 +1,32 @@
+---
+title: "varroa virus networks"
+author: "Sasha Mikheyev"
+date: "1/22/2020"
+output: html_document
+---
+
+```{r libraries}
+library(tidyverse)
+```
+
+```{r import}
+virusId <- read_tsv("data/viruses.txt", col_names = c("target_id", "description"))
+read_kallisto <- function(filename) {
+  sampleName <- sub("data/kallisto/(.*).tsv.gz","\\1", filename)
+  return(read_tsv(filename) %>%
+           select(!!sampleName := tpm))
+}
+
+df <- list.files(path = "data/kallisto", full.names = TRUE) %>% 
+  lapply(read_kallisto) %>% 
+  bind_cols() 
+
+df$target_id <- list.files(path = "data/kallisto", full.names = TRUE)[1] %>% read_tsv() %>% select(target_id) %>% pull()
+
+saveRDS(df, file = "data/kallisto.rds")
+```
+
+```{r}
+left_join(virusId, df) %>% select(-target_id) %>% gather("library", "tpm", -description) %>% ggplot(aes(x= library, y = tpm, fill = description)) + geom_bar(stat = "identity") + theme(axis.text.x = element_text(angle = 90))
+```
+
