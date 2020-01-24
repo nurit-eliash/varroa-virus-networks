@@ -28,5 +28,7 @@ saveRDS(df, file = "data/kallisto.rds")
 
 ```{r}
 left_join(virusId, df) %>% select(-target_id) %>% gather("library", "tpm", -description) %>% ggplot(aes(x= library, y = tpm, fill = description)) + geom_bar(stat = "identity") + theme(axis.text.x = element_text(angle = 90))
+
+princomp(left_join(virusId, df) %>% select(-target_id) %>% gather("library", "tpm", -description) %>% spread(description, tpm) %>% select(-library)) %>% biplot(.)
 ```
 
