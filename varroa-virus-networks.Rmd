@@ -7,6 +7,7 @@ output: html_document
 
 ```{r libraries}
 library(tidyverse)
+# awk '$3=="transcript"' GCF_002443255.1_Vdes_3.0_genomic.gff | perl -n -e 'print "$1\t$2\n" if /gene=LOC(\d+);.*transcript_id=(.*)/' | gzip >! gene2isoform.txt.gz
 virusId <- read_tsv("data/viruses.txt", col_names = c("target_id", "description"))
 ```
 
@@ -27,7 +28,7 @@ saveRDS(df, file = "data/kallisto.rds")
 ```
 
 ```{r}
-left_join(virusId, df) %>% select(-target_id) %>% gather("library", "tpm", -description) %>% ggplot(aes(x= library, y = tpm, fill = description)) + geom_bar(stat = "identity") + theme(axis.text.x = element_text(angle = 90))
+left_join(virusId, df) %>% select(-target_id) %>% gather("library", "tpm", -description) %>% ggplot(aes(x= library, y = tpm, fill = description)) + geom_bar(stat = "identity") + theme(axis.text.x = element_text(angle = 90)) 
 
 princomp(left_join(virusId, df) %>% select(-target_id) %>% gather("library", "tpm", -description) %>% spread(description, tpm) %>% select(-library)) %>% biplot(.)
 ```
