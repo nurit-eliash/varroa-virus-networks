@@ -7,7 +7,7 @@ output: html_document
 
 ```{r libraries}
 library(tidyverse)
-# awk '$3=="transcript"' GCF_002443255.1_Vdes_3.0_genomic.gff | perl -n -e 'print "$1\t$2\n" if /gene=LOC(\d+);.*transcript_id=(.*)/' | gzip >! gene2isoform.txt.gz
+# awk '$3=="mRNA"' GCF_002443255.1_Vdes_3.0_genomic.gff | perl -n -e 'print "$1\t$2\n" if /gene=LOC(\d+);.*transcript_id=(.*)/' | gzip >! gene2isoform.txt.gz
 virusId <- read_tsv("data/viruses.txt", col_names = c("target_id", "description"))
 ```
 
