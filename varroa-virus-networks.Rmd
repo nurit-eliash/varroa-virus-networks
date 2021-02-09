@@ -2,7 +2,13 @@
 title: "varroa virus networks"
 author: "Sasha Mikheyev and Nurit Eliash"
 date: "1/22/2020"
-output: html_document
+output:
+  rmdformats::readthedown:
+    self_contained: true
+    thumbnails: true
+    lightbox: true
+    gallery: false
+    highlight: tango
 ---
 this analysis is on the 66 libraries (i removed the 5 outlirered libraries from the "data/kallisto" folder in GitHub)
 the working directory is in GitHb:
@@ -42,10 +48,11 @@ library("grid")
 library("gridExtra")
 library("GeneOverlap")
 library(cluster)
+library(rmdformats)
 ```
 
 # Gene network analysis
-A gene co-expression network aims to identify genes that interact with one another based on common expression profiles (Barabási and Oltvai 2004). Groups of co-expressed genes that have similar expression patterns across samples are identified using hierarchical clustering and are placed in gene ‘modules’ (Miller, Horvath, and Geschwind 2010). 
+A gene co-expression network identify genes that interact with one another based on common expression profiles (Barabási and Oltvai 2004). Groups of co-expressed genes that have similar expression patterns across samples are identified using hierarchical clustering and are placed in gene ‘modules’ (Miller, Horvath, and Geschwind 2010). 
 Weighted gene co-expression analysis was conducted using the WGCNA package in R (Langfelder and Horvath 2008).
 
 # Load data 
