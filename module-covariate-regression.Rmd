@@ -1,0 +1,633 @@
+---
+title: "module-covariates-regression"
+author: "Nurit"
+date: "4/14/2020"
+output: html_document
+---
+#### Regression analysis of covariates (categorical), on eigengenes (numerial). 
+ a module-covariate correlation for each covariate to see if it interacts with the modules' eigengenes
+ 
+### set the libraries
+```{r load library, echo=FALSE, message=FALSE, warning=FALSE, include=TRUE, paged.print=FALSE}
+library(dplyr)
+library(tidyverse)
+library(vegan)
+library(DESeq2)
+library(ggfortify)
+library(WGCNA)
+library(rmarkdown)
+library(corrplot)
+library(rsq)
+library(RColorBrewer)
+library(gplots)
+library(lattice)
+library(FactoMineR)
+library(ggplot2)
+library(ggfortify)
+library(autoplotly)
+library(stats)
+library(changepoint)
+library(tibble)
+library(forcats)
+library(plotly)
+```
+
+### set the directory and relevant files
+```{r include=TRUE, paged.print=FALSE, echo=FALSE}
+
+setwd("~/OneDrive - OIST/Repos/varroa-virus-networks")
+
+# Load the expression and trait data saved in the first part 
+lnames <- load(file = "varroa_virus-01-dataInput.RData"); 
+
+#The variable lnames contains the names of loaded variables. 
+lnames 
+
+# Load network data saved in the second part.
+lnames = load(file = "Varroa_modules_networkConstruction-auto.RData"); 
+lnames
+
+# Define numbers of genes and samples
+nGenes = ncol(for_modules);
+nSamples = nrow(for_modules);
+# Recalculate MEs with color labels 
+MEs0 = moduleEigengenes(for_modules, moduleColors)$eigengenes
+MEs = orderMEs(MEs0)
+
+# read csv table with the factors you want to test for the module-cov Regression
+ModTraitFac <- read.csv("/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks/module_trait_factors.csv") 
+#%>%  column_to_rownames(var = "Library")
+
+```
+
+ PCAs of libraries, for each covariate, colored by the different covariate level:
+```{r}
+
+# join the MEs and the ModTraitFac into one data.frame: "Modules_Covar" 
+MEs2 <- rownames_to_column(MEs, var = "Library")
+Modules_Covar <- left_join(MEs2, ModTraitFac, by = "Library")
+
+#plot PCA, for example - "mite stage" 
+
+PC <- prcomp(MEs)
+PCi<-data.frame(PC$x,Stage=Modules_Covar$mite_stage)
+
+p <- autoplotly(ggplot(PCi,aes(x=PC1,y=PC2,col=Stage), dynamicTicks = TRUE, tooltip = "all")+
+   geom_point(size=3,alpha=0.5)+ #Size and alpha just for fun
+   scale_color_manual(values = c("#FF1BB3","#A7FF5B","#99554D", "#1AB2FF"))+ #your colors here
+   theme_classic()+
+     ggtitle("PCA of libraries based on eigengenes in different Mite's life stage"))
+p
+
+
+-------------#for "bee sp" covariate:------
+PCi<-data.frame(PC$x, Species = Modules_Covar$bee_sp)
+autoplotly(ggplot(PCi,aes(x=PC1,y=PC2,col=Species), dynamicTicks = TRUE, tooltip = "all")+
+   geom_point(size=3,alpha=0.5)+ #Size and alpha just for fun
+   scale_color_manual(values = c("#FF1BB3","#A7FF5B","#99554D", "#1AB2FF", "#1827FF"))+ #your colors here
+   theme_classic()+
+     ggtitle("PCA of libraries based on eigengenes in different bee species"))
+
+-------------#for "mite sp" covariate:------
+PCi<-data.frame(PC$x, Species = Modules_Covar$mite_sp)
+autoplotly(ggplot(PCi,aes(x=PC1,y=PC2,col=Species), dynamicTicks = TRUE, tooltip = "all")+
+   geom_point(size=3,alpha=0.5)+ #Size and alpha just for fun
+   scale_color_manual(values = c("#FF1BB3","#A7FF5B","#99554D", "#1AB2FF", "#1827FF"))+ #your colors here
+   theme_classic()+
+     ggtitle("PCA of libraries based on eigengenes in different mite species"))
+
+-------------#for "collect method" covariate:------
+PCi<-data.frame(PC$x, Collection_method = Modules_Covar$collec_method)
+autoplotly(ggplot(PCi,aes(x=PC1,y=PC2,col=Collection_method), dynamicTicks = TRUE, tooltip = "all")+
+   geom_point(size=3,alpha=0.5)+ #Size and alpha just for fun
+   scale_color_manual(values = c("#FF1BB3","#A7FF5B","#99554D", "#1AB2FF", "#1827FF"))+ #your colors here
+   theme_classic()+
+     ggtitle("PCA of libraries based on eigengenes in different Collection method"))
+
+-------------#for "Lib_select" covariate:------
+PCi<-data.frame(PC$x, Lib_select = Modules_Covar$Lib_select)
+autoplotly(ggplot(PCi,aes(x=PC1,y=PC2,col=Lib_select), dynamicTicks = TRUE, tooltip = "all")+
+   geom_point(size=3,alpha=0.5)+ #Size and alpha just for fun
+   scale_color_manual(values = c("#FF1BB3","#A7FF5B","#99554D", "#1AB2FF", "#1827FF"))+ #your colors here
+   theme_classic()+
+     ggtitle("PCA of libraries based on eigengenes in different library selection"))
+
+-------------#for "Lib_treat" covariate:------
+PCi<-data.frame(PC$x, Lib_treat = Modules_Covar$Lib_treat)
+autoplotly(ggplot(PCi,aes(x=PC1,y=PC2,col=Lib_treat), dynamicTicks = TRUE, tooltip = "all")+
+   geom_point(size=3,alpha=0.5)+ #Size and alpha just for fun
+   scale_color_manual(values = c("#FF1BB3","#589E0C","#99554D", "#1AB2FF", "#1827FF"))+ #your colors here
+   theme_classic()+
+     ggtitle("PCA of libraries based on eigengenes in different library treatment"))
+```
+
+
+
+
+```{r eval=FALSE, include=FALSE}
+#dont run - i need to figure out how to change the Hover Text for each dot, so it will show the name of the specific library
+----------
+  
+p <- plot_ly(type = 'scatter', mode = 'markers') 
+fig <- fig %>%
+  add_trace(
+    x = c(1:100), 
+    y = rnorm(100, mean = 5), 
+    marker = list(color='green'),
+    hoverinfo = 'Modules_Covar$',
+    showlegend = F
+  ) 
+```
+### run regression analysis for each pair of module ~ covariate (15 x 6)
+```{r warning=FALSE}
+#make a function that takes variables: x, y and "lable", runs lm(y~x), and returns a dataframe with the desired parameters
+corFun <- function(x, y, label) {
+  s <- summary(lm(y~x))
+  return(data.frame(coefficient = rownames(s$coefficients),
+             estimate = s$coefficients[,1],
+             p = s$coefficients[,4],
+             r.sqr = s$r.squared,
+             name = label))
+}
+
+# run the function (corFun) where x = one of the 6 covariates,  y = one of the 15 modules, lable = covariate name.
+
+# first make a list , "dat", for the final output. 
+dat <- list()
+# now we run the "corFun" for each of the covariates (x), 
+# the function runs in a loop against all 15 modules (for each "i" in the "MEs" dataframe)
+for (i in 1:(ncol(MEs))) {
+  mite_stage <- corFun(x = ModTraitFac$mite_stage, y = MEs[,i], label = "mite_stage")
+  bee_sp <- corFun(x = ModTraitFac$bee_sp, y = MEs[,i], label = "bee_sp")
+  mite_sp <- corFun(x = ModTraitFac$mite_sp, y = MEs[,i], label = "mite_sp")
+  collec_method <- corFun(x = ModTraitFac$collec_method, y = MEs[,i], label = "collec_method")
+  Lib_select <- corFun(x = ModTraitFac$Lib_select, y = MEs[,i], label = "Lib_select")
+  Lib_treat <- corFun(x = ModTraitFac$Lib_treat, y = MEs[,i], label = "Lib_treat")
+  # now bind all the correlations outputs in "dat" list 
+  dat[[i]] <- bind_rows(mite_stage, bee_sp, mite_sp, collec_method, Lib_select, Lib_treat)
+}
+
+# add the modules names to each analysis (list)
+names(dat) <- names(MEs)
+
+# the "dat" is a list of 15 lists. each contains the dataframe generated by the "corFun" function. 
+# you can look at each of the modules results, by "dat$___".
+# e.g. Magenta module:
+dat$MEmagenta
+```
+
+### plot the Padjust of the module-covariates Regression
+
+### code example: Magenta module
+```{r}
+# in this chunk, replace ____ with the desired module
+
+# pick each of the modules, by "dat$___".
+# e.g. Magenta module:
+module <- dat$MEmagenta
+
+# calculate the p.adjust for each p-value, and add the column of adjusted pvalues
+Padjust <- p.adjust(module$p, method = "fdr")
+module <- module %>% add_column(Padjust) 
+module
+
+# make a wider table to plot
+plotmodule <- module %>% pivot_wider(id_cols = c("name", "coefficient"), values_from = Padjust)
+plotmodule
+#make the variables into numeric
+plotmodule[is.na(x = plotmodule)] <- 0
+cols.num <- plotmodule[,c(2:7)]  
+plotmodule <- plotmodule %>% column_to_rownames(var = "coefficient") 
+plotmodule <- data.matrix(plotmodule)
+plotmodule
+
+#plot it (dont forget to change the title "____ reg Padjust")
+heatmap.2(plotmodule, main = "Magenta reg Padjust", xlab = "Covariates", ylab = "Levels", cexRow=1,cexCol=1,margins=c(5,8),srtCol=30, breaks=c(0,0.001,0.05,1), col=c("white", "orange", "blue"),
+# aiming for >0.05 is blue
+dendrogram="none", trace="none", key = FALSE) 
+
+legend(x="left", legend=c("NA", "<0.05", ">0.05"), 
+     fill=c("white", "orange", "blue"))
+
+```
+
+### salmon
+```{r echo=FALSE}
+# you can look at each of the modules, by "dat$___".
+# e.g. Magenta module:
+module <- dat$MEsalmon
+
+# calculate the p.adjust for each p-value, and add the column of adjusted pvalues
+Padjust <- p.adjust(module$p, method = "fdr")
+module <- module %>% add_column(Padjust) 
+
+# make a wider table to plot
+plotmodule <- module %>% pivot_wider(id_cols = c("name", "coefficient"), values_from = Padjust)
+#make the variables into numeric
+plotmodule[is.na(x = plotmodule)] <- 0
+cols.num <- plotmodule[,c(2:7)]  
+plotmodule <- plotmodule %>% column_to_rownames(var = "coefficient") 
+plotmodule <- data.matrix(plotmodule)
+
+#plot it (dont forget to change the title "____ reg Padjust")
+heatmap.2(plotmodule, main = "salmon reg Padjust", xlab = "Covariates", ylab = "Levels", cexRow=1,cexCol=1,margins=c(5,8),srtCol=30, breaks=c(0,0.001,0.05,1), col=c("white", "orange", "blue"),
+# aiming for >0.05 is blue
+dendrogram="none", trace="none", key = FALSE) 
+
+legend(x="left", legend=c("NA", "<0.05", ">0.05"), 
+     fill=c("white", "orange", "blue"))
+
+```
+
+### yellow
+```{r echo=FALSE}
+# you can look at each of the modules, by "dat$___".
+# e.g. Magenta module:
+module <- dat$MEyellow
+
+# calculate the p.adjust for each p-value, and add the column of adjusted pvalues
+Padjust <- p.adjust(module$p, method = "fdr")
+module <- module %>% add_column(Padjust) 
+
+# make a wider table to plot
+plotmodule <- module %>% pivot_wider(id_cols = c("name", "coefficient"), values_from = Padjust)
+#make the variables into numeric
+plotmodule[is.na(x = plotmodule)] <- 0
+cols.num <- plotmodule[,c(2:7)]  
+plotmodule <- plotmodule %>% column_to_rownames(var = "coefficient") 
+plotmodule <- data.matrix(plotmodule)
+
+#plot it (dont forget to change the title "____ reg Padjust")
+heatmap.2(plotmodule, main = "yellow reg Padjust", xlab = "Covariates", ylab = "Levels", cexRow=1,cexCol=1,margins=c(5,8),srtCol=30, breaks=c(0,0.001,0.05,1), col=c("white", "orange", "blue"),
+# aiming for >0.05 is blue
+dendrogram="none", trace="none", key = FALSE) 
+
+legend(x="left", legend=c("NA", "<0.05", ">0.05"), 
+     fill=c("white", "orange", "blue"))
+
+```
+
+### purple
+```{r echo=FALSE}
+# you can look at each of the modules, by "dat$___".
+# e.g. Magenta module:
+module <- dat$MEpurple
+
+# calculate the p.adjust for each p-value, and add the column of adjusted pvalues
+Padjust <- p.adjust(module$p, method = "fdr")
+module <- module %>% add_column(Padjust) 
+
+# make a wider table to plot
+plotmodule <- module %>% pivot_wider(id_cols = c("name", "coefficient"), values_from = Padjust)
+#make the variables into numeric
+plotmodule[is.na(x = plotmodule)] <- 0
+cols.num <- plotmodule[,c(2:7)]  
+plotmodule <- plotmodule %>% column_to_rownames(var = "coefficient") 
+plotmodule <- data.matrix(plotmodule)
+
+#plot it (dont forget to change the title "____ reg Padjust")
+heatmap.2(plotmodule, main = "purple reg Padjust", xlab = "Covariates", ylab = "Levels", cexRow=1,cexCol=1,margins=c(5,8),srtCol=30, breaks=c(0,0.001,0.05,1), col=c("white", "orange", "blue"),
+# aiming for >0.05 is blue
+dendrogram="none", trace="none", key = FALSE) 
+
+legend(x="left", legend=c("NA", "<0.05", ">0.05"), 
+     fill=c("white", "orange", "blue"))
+
+```
+
+### black
+```{r echo=FALSE}
+# you can look at each of the modules, by "dat$___".
+# e.g. Magenta module:
+module <- dat$MEblack
+
+# calculate the p.adjust for each p-value, and add the column of adjusted pvalues
+Padjust <- p.adjust(module$p, method = "fdr")
+module <- module %>% add_column(Padjust) 
+
+# make a wider table to plot
+plotmodule <- module %>% pivot_wider(id_cols = c("name", "coefficient"), values_from = Padjust)
+#make the variables into numeric
+plotmodule[is.na(x = plotmodule)] <- 0
+cols.num <- plotmodule[,c(2:7)]  
+plotmodule <- plotmodule %>% column_to_rownames(var = "coefficient") 
+plotmodule <- data.matrix(plotmodule)
+
+#plot it (dont forget to change the title "____ reg Padjust")
+heatmap.2(plotmodule, main = "black reg Padjust", xlab = "Covariates", ylab = "Levels", cexRow=1,cexCol=1,margins=c(5,8),srtCol=30, breaks=c(0,0.001,0.05,1), col=c("white", "orange", "blue"),
+# aiming for >0.05 is blue
+dendrogram="none", trace="none", key = FALSE) 
+
+legend(x="left", legend=c("NA", "<0.05", ">0.05"), 
+     fill=c("white", "orange", "blue"))
+
+```
+
+### green
+```{r echo=FALSE}
+# you can look at each of the modules, by "dat$___".
+# e.g. Magenta module:
+module <- dat$MEgreen
+
+# calculate the p.adjust for each p-value, and add the column of adjusted pvalues
+Padjust <- p.adjust(module$p, method = "fdr")
+module <- module %>% add_column(Padjust) 
+
+# make a wider table to plot
+plotmodule <- module %>% pivot_wider(id_cols = c("name", "coefficient"), values_from = Padjust)
+#make the variables into numeric
+plotmodule[is.na(x = plotmodule)] <- 0
+cols.num <- plotmodule[,c(2:7)]  
+plotmodule <- plotmodule %>% column_to_rownames(var = "coefficient") 
+plotmodule <- data.matrix(plotmodule)
+
+#plot it (dont forget to change the title "____ reg Padjust")
+heatmap.2(plotmodule, main = "green reg Padjust", xlab = "Covariates", ylab = "Levels", cexRow=1,cexCol=1,margins=c(5,8),srtCol=30, breaks=c(0,0.001,0.05,1), col=c("white", "orange", "blue"),
+# aiming for >0.05 is blue
+dendrogram="none", trace="none", key = FALSE) 
+
+legend(x="left", legend=c("NA", "<0.05", ">0.05"), 
+     fill=c("white", "orange", "blue"))
+
+```
+
+### turquoise
+```{r echo=FALSE}
+# you can look at each of the modules, by "dat$___".
+# e.g. Magenta module:
+module <- dat$MEturquoise
+
+# calculate the p.adjust for each p-value, and add the column of adjusted pvalues
+Padjust <- p.adjust(module$p, method = "fdr")
+module <- module %>% add_column(Padjust) 
+
+# make a wider table to plot
+plotmodule <- module %>% pivot_wider(id_cols = c("name", "coefficient"), values_from = Padjust)
+#make the variables into numeric
+plotmodule[is.na(x = plotmodule)] <- 0
+cols.num <- plotmodule[,c(2:7)]  
+plotmodule <- plotmodule %>% column_to_rownames(var = "coefficient") 
+plotmodule <- data.matrix(plotmodule)
+
+#plot it (dont forget to change the title "____ reg Padjust")
+heatmap.2(plotmodule, main = "turquoise reg Padjust", xlab = "Covariates", ylab = "Levels", cexRow=1,cexCol=1,margins=c(5,8),srtCol=30, breaks=c(0,0.001,0.05,1), col=c("white", "orange", "blue"),
+# aiming for >0.05 is blue
+dendrogram="none", trace="none", key = FALSE) 
+
+legend(x="left", legend=c("NA", "<0.05", ">0.05"), 
+     fill=c("white", "orange", "blue"))
+
+```
+
+### blue
+```{r echo=FALSE}
+# you can look at each of the modules, by "dat$___".
+# e.g. Magenta module:
+module <- dat$MEblue
+
+# calculate the p.adjust for each p-value, and add the column of adjusted pvalues
+Padjust <- p.adjust(module$p, method = "fdr")
+module <- module %>% add_column(Padjust) 
+
+# make a wider table to plot
+plotmodule <- module %>% pivot_wider(id_cols = c("name", "coefficient"), values_from = Padjust)
+#make the variables into numeric
+plotmodule[is.na(x = plotmodule)] <- 0
+cols.num <- plotmodule[,c(2:7)]  
+plotmodule <- plotmodule %>% column_to_rownames(var = "coefficient") 
+plotmodule <- data.matrix(plotmodule)
+
+#plot it (dont forget to change the title "____ reg Padjust")
+heatmap.2(plotmodule, main = "blue reg Padjust", xlab = "Covariates", ylab = "Levels", cexRow=1,cexCol=1,margins=c(5,8),srtCol=30, breaks=c(0,0.001,0.05,1), col=c("white", "orange", "blue"),
+# aiming for >0.05 is blue
+dendrogram="none", trace="none", key = FALSE) 
+
+legend(x="left", legend=c("NA", "<0.05", ">0.05"), 
+     fill=c("white", "orange", "blue"))
+
+```
+
+### greenyellow
+```{r echo=FALSE}
+# you can look at each of the modules, by "dat$___".
+# e.g. Magenta module:
+module <- dat$MEgreenyellow
+
+# calculate the p.adjust for each p-value, and add the column of adjusted pvalues
+Padjust <- p.adjust(module$p, method = "fdr")
+module <- module %>% add_column(Padjust) 
+
+# make a wider table to plot
+plotmodule <- module %>% pivot_wider(id_cols = c("name", "coefficient"), values_from = Padjust)
+#make the variables into numeric
+plotmodule[is.na(x = plotmodule)] <- 0
+cols.num <- plotmodule[,c(2:7)]  
+plotmodule <- plotmodule %>% column_to_rownames(var = "coefficient") 
+plotmodule <- data.matrix(plotmodule)
+
+#plot it (dont forget to change the title "____ reg Padjust")
+heatmap.2(plotmodule, main = "greenyellow reg Padjust", xlab = "Covariates", ylab = "Levels", cexRow=1,cexCol=1,margins=c(5,8),srtCol=30, breaks=c(0,0.001,0.05,1), col=c("white", "orange", "blue"),
+# aiming for >0.05 is blue
+dendrogram="none", trace="none", key = FALSE) 
+
+legend(x="left", legend=c("NA", "<0.05", ">0.05"), 
+     fill=c("white", "orange", "blue"))
+
+```
+
+### brown
+```{r echo=FALSE}
+# you can look at each of the modules, by "dat$___".
+# e.g. Magenta module:
+module <- dat$MEbrown
+
+# calculate the p.adjust for each p-value, and add the column of adjusted pvalues
+Padjust <- p.adjust(module$p, method = "fdr")
+module <- module %>% add_column(Padjust) 
+
+# make a wider table to plot
+plotmodule <- module %>% pivot_wider(id_cols = c("name", "coefficient"), values_from = Padjust)
+#make the variables into numeric
+plotmodule[is.na(x = plotmodule)] <- 0
+cols.num <- plotmodule[,c(2:7)]  
+plotmodule <- plotmodule %>% column_to_rownames(var = "coefficient") 
+plotmodule <- data.matrix(plotmodule)
+
+#plot it (dont forget to change the title "____ reg Padjust")
+heatmap.2(plotmodule, main = "brown reg Padjust", xlab = "Covariates", ylab = "Levels", cexRow=1,cexCol=1,margins=c(5,8),srtCol=30, breaks=c(0,0.001,0.05,1), col=c("white", "orange", "blue"),
+# aiming for >0.05 is blue
+dendrogram="none", trace="none", key = FALSE) 
+
+legend(x="left", legend=c("NA", "<0.05", ">0.05"), 
+     fill=c("white", "orange", "blue"))
+
+```
+
+### cyan
+```{r echo=FALSE}
+# you can look at each of the modules, by "dat$___".
+# e.g. Magenta module:
+module <- dat$MEcyan
+
+# calculate the p.adjust for each p-value, and add the column of adjusted pvalues
+Padjust <- p.adjust(module$p, method = "fdr")
+module <- module %>% add_column(Padjust) 
+
+# make a wider table to plot
+plotmodule <- module %>% pivot_wider(id_cols = c("name", "coefficient"), values_from = Padjust)
+#make the variables into numeric
+plotmodule[is.na(x = plotmodule)] <- 0
+cols.num <- plotmodule[,c(2:7)]  
+plotmodule <- plotmodule %>% column_to_rownames(var = "coefficient") 
+plotmodule <- data.matrix(plotmodule)
+
+#plot it (dont forget to change the title "____ reg Padjust")
+heatmap.2(plotmodule, main = "cyan reg Padjust", xlab = "Covariates", ylab = "Levels", cexRow=1,cexCol=1,margins=c(5,8),srtCol=30, breaks=c(0,0.001,0.05,1), col=c("white", "orange", "blue"),
+# aiming for >0.05 is blue
+dendrogram="none", trace="none", key = FALSE) 
+
+legend(x="left", legend=c("NA", "<0.05", ">0.05"), 
+     fill=c("white", "orange", "blue"))
+
+```
+
+### red
+```{r echo=FALSE}
+# you can look at each of the modules, by "dat$___".
+# e.g. Magenta module:
+module <- dat$MEred
+
+# calculate the p.adjust for each p-value, and add the column of adjusted pvalues
+Padjust <- p.adjust(module$p, method = "fdr")
+module <- module %>% add_column(Padjust) 
+
+# make a wider table to plot
+plotmodule <- module %>% pivot_wider(id_cols = c("name", "coefficient"), values_from = Padjust)
+#make the variables into numeric
+plotmodule[is.na(x = plotmodule)] <- 0
+cols.num <- plotmodule[,c(2:7)]  
+plotmodule <- plotmodule %>% column_to_rownames(var = "coefficient") 
+plotmodule <- data.matrix(plotmodule)
+
+#plot it (dont forget to change the title "____ reg Padjust")
+heatmap.2(plotmodule, main = "red reg Padjust", xlab = "Covariates", ylab = "Levels", cexRow=1,cexCol=1,margins=c(5,8),srtCol=30, breaks=c(0,0.001,0.05,1), col=c("white", "orange", "blue"),
+# aiming for >0.05 is blue
+dendrogram="none", trace="none", key = FALSE) 
+
+legend(x="left", legend=c("NA", "<0.05", ">0.05"), 
+     fill=c("white", "orange", "blue"))
+
+```
+
+### pink
+```{r echo=FALSE}
+# you can look at each of the modules, by "dat$___".
+# e.g. Magenta module:
+module <- dat$MEpink
+
+# calculate the p.adjust for each p-value, and add the column of adjusted pvalues
+Padjust <- p.adjust(module$p, method = "fdr")
+module <- module %>% add_column(Padjust) 
+
+# make a wider table to plot
+plotmodule <- module %>% pivot_wider(id_cols = c("name", "coefficient"), values_from = Padjust)
+#make the variables into numeric
+plotmodule[is.na(x = plotmodule)] <- 0
+cols.num <- plotmodule[,c(2:7)]  
+plotmodule <- plotmodule %>% column_to_rownames(var = "coefficient") 
+plotmodule <- data.matrix(plotmodule)
+
+#plot it (dont forget to change the title "____ reg Padjust")
+heatmap.2(plotmodule, main = "pink reg Padjust", xlab = "Covariates", ylab = "Levels", cexRow=1,cexCol=1,margins=c(5,8),srtCol=30, breaks=c(0,0.001,0.05,1), col=c("white", "orange", "blue"),
+# aiming for >0.05 is blue
+dendrogram="none", trace="none", key = FALSE) 
+
+legend(x="left", legend=c("NA", "<0.05", ">0.05"), 
+     fill=c("white", "orange", "blue"))
+
+```
+
+### tan
+```{r echo=FALSE}
+# you can look at each of the modules, by "dat$___".
+# e.g. Magenta module:
+module <- dat$MEtan
+
+# calculate the p.adjust for each p-value, and add the column of adjusted pvalues
+Padjust <- p.adjust(module$p, method = "fdr")
+module <- module %>% add_column(Padjust) 
+
+# make a wider table to plot
+plotmodule <- module %>% pivot_wider(id_cols = c("name", "coefficient"), values_from = Padjust)
+#make the variables into numeric
+plotmodule[is.na(x = plotmodule)] <- 0
+cols.num <- plotmodule[,c(2:7)]  
+plotmodule <- plotmodule %>% column_to_rownames(var = "coefficient") 
+plotmodule <- data.matrix(plotmodule)
+
+#plot it (dont forget to change the title "____ reg Padjust")
+heatmap.2(plotmodule, main = "tan reg Padjust", xlab = "Covariates", ylab = "Levels", cexRow=1,cexCol=1,margins=c(5,8),srtCol=30, breaks=c(0,0.001,0.05,1), col=c("white", "orange", "blue"),
+# aiming for >0.05 is blue
+dendrogram="none", trace="none", key = FALSE) 
+
+legend(x="left", legend=c("NA", "<0.05", ">0.05"), 
+     fill=c("white", "orange", "blue"))
+
+```
+
+### grey
+```{r echo=FALSE}
+# you can look at each of the modules, by "dat$___".
+# e.g. Magenta module:
+module <- dat$MEgrey
+
+# calculate the p.adjust for each p-value, and add the column of adjusted pvalues
+Padjust <- p.adjust(module$p, method = "fdr")
+module <- module %>% add_column(Padjust) 
+
+# make a wider table to plot
+plotmodule <- module %>% pivot_wider(id_cols = c("name", "coefficient"), values_from = Padjust)
+#make the variables into numeric
+plotmodule[is.na(x = plotmodule)] <- 0
+cols.num <- plotmodule[,c(2:7)]  
+plotmodule <- plotmodule %>% column_to_rownames(var = "coefficient") 
+plotmodule <- data.matrix(plotmodule)
+
+#plot it (dont forget to change the title "____ reg Padjust")
+heatmap.2(plotmodule, main = "grey reg Padjust", xlab = "Covariates", ylab = "Levels", cexRow=1,cexCol=1,margins=c(5,8),srtCol=30, breaks=c(0,0.001,0.05,1), col=c("white", "orange", "blue"),
+# aiming for >0.05 is blue
+dendrogram="none", trace="none", key = FALSE) 
+
+legend(x="left", legend=c("NA", "<0.05", ">0.05"), 
+     fill=c("white", "orange", "blue"))
+
+```
+
+
+other codes, not used for this analysis:
+### DONT run - specifically for "MEmagenta" module and "mite_stage" covariate:
+```{r eval=FALSE, include=FALSE}
+ # make the regression model
+CovMEsReg <-  lm(formula = MEmagenta ~ mite_stage, data = Modules_Covar)
+
+  # extract all the interesitng coefficients and their significance
+RegSum <- summary.lm(CovMEsReg)
+Regcoef <- as.data.frame(RegSum$coefficients)
+RegSum$r.squared
+plot(RegSum$residuals)
+
+# and make a matrix for each of the parameters (slopes, slopesP, RegR)  
+slopes <- Regcoef %>% 
+    rownames_to_column("slopes") %>%
+    filter(!(slopes %in% "(Intercept)")) %>%
+    dplyr::select(c("slopes","Estimate"))
+
+slopesP <- Regcoef %>% 
+    rownames_to_column("slopes") %>%
+    filter(!(slopes %in% "(Intercept)")) %>%
+    dplyr::select(c("slopes","Pr(>|t|)"))
+
+RegR <- rsq(CovMEsReg)  
+
+``` 
+

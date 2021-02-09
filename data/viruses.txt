@@ -1,38 +1,28 @@
-NC_002548.1	Acute bee paralysis virus, complete genome
-KR819915.1	Apis mellifera filamentous virus isolate CH-CO5, partial genome
-KY354240.1	Apis Nora virus isolate RI-11 nonstructural polyprotein, envelope protein, and capsid protein genes, complete cds
-NC_035071.1	Apis flavivirus isolate RI-A polyprotein gene, complete cds
-KY354234.1	Apis rhabdovirus 2 isolate T-12 N protein, P protein, M protein, G protein, and L protein genes, complete cds
-NC_027631.1	Bee Macula-like virus isolate France 878V, complete genome
-NC_003784.1	Black queen cell virus nonstructural polyprotein (orf1) and structural polyprotein (orf2) genes, complete cds
-NC_010711.1	Chronic bee paralysis virus RNA 1, complete genome
-NC_004830.2	Deformed wing virus, complete genome
-}NC_009025.1	Israel acute paralysis virus of bees
-NC_004807.1	Kashmir bee virus, complete genome
-NC_032433.1	Lake Sinai virus strain WHCC111282 hypothetical protein 1, hypothetical protein 2, hypothetical protein 3, and hypothetical protein 4 genes, complete cds
-NC_014137.1	Slow bee paralysis virus, complete genome
-NC_002066.1	Sacbrood virus complete genome
-NC_006494.1	Varroa destructor virus-1, complete genome
-NC_040601.1	Varroa destructor virus 2 isolate VDV-2, complete genome
-KX578272.1	Varroa destructor virus 3 isolate VDV-3, complete genome
-MG571087.1	Varroa mite associated genomovirus 1 isolate VPVL_36, complete genome
-MG571088.1	Varroa mite associated virus 1 isolate VPVL_46, complete genome
-NC_002548.1	Acute bee paralysis virus, complete genome
-KR819915.1	Apis mellifera filamentous virus isolate CH-CO5, partial genome
-KY354240.1	Apis Nora virus isolate RI-11 nonstructural polyprotein, envelope protein, and capsid protein genes, complete cds
-NC_035071.1	Apis flavivirus isolate RI-A polyprotein gene, complete cds
-KY354234.1	Apis rhabdovirus 2 isolate T-12 N protein, P protein, M protein, G protein, and L protein genes, complete cds
-NC_027631.1	Bee Macula-like virus isolate France 878V, complete genome
-NC_003784.1	Black queen cell virus nonstructural polyprotein (orf1) and structural polyprotein (orf2) genes, complete cds
-NC_010711.1	Chronic bee paralysis virus RNA 1, complete genome
-NC_004830.2	Deformed wing virus, complete genome
-}NC_009025.1	Israel acute paralysis virus of bees
-NC_004807.1	Kashmir bee virus, complete genome
-NC_032433.1	Lake Sinai virus strain WHCC111282 hypothetical protein 1, hypothetical protein 2, hypothetical protein 3, and hypothetical protein 4 genes, complete cds
-NC_014137.1	Slow bee paralysis virus, complete genome
-NC_002066.1	Sacbrood virus complete genome
-NC_006494.1	Varroa destructor virus-1, complete genome
-NC_040601.1	Varroa destructor virus 2 isolate VDV-2, complete genome
-KX578272.1	Varroa destructor virus 3 isolate VDV-3, complete genome
-MG571087.1	Varroa mite associated genomovirus 1 isolate VPVL_36, complete genome
-MG571088.1	Varroa mite associated virus 1 isolate VPVL_46, complete genome
+NC_004830.2	DWVa
+KY354234.1	ARV_2
+MK032465.1	VOV_1_1
+MK032466.1	VOV_1_2
+MK032467.1	VOV_1_3
+MK032468.1	VOV_1_4
+MK032469.1	VOV_1_5
+MK032470.1	VOV_1_6
+NC_027631.1	BMV
+KR819915.1	AmFV
+NC_002548.1	ABPV
+NC_027619.1	VTLV
+NC_009025.1	IAPV
+NC_002066.1	SV
+NC_006494.1	VDV1/DWVb
+ENA|CEND01000001|CEND01000001.1	DWVc
+NC_003784.1	BQCV
+KX578272.1 	VDV3
+NC_040601.1	VDV2
+MK032464.1	VDV4
+NC_004807.1	KBV
+NC_010711.1	CBPV
+NC_014137.1	SBPV
+NC_032433.1	LSV
+NC_035071.1	AFV
+KY354240.1	ANV
+MG571088.1	VPVL_46
+MG571087.1	VPVL_36

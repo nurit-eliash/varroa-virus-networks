@@ -1,0 +1,551 @@
+---
+title: "Varroa modules females libraries"
+author: "Nurit"
+date: "8/11/2020"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+this analysis starts with the 66 libraries (i removed the 5 outlirered libraries from the "data/kallisto" folder in GitHub, however they still exsist in the local folder: "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/data/kallisto.rds".
+the working directory is in GitHb:
+"/Users/nuriteliash/Documents/GitHub/varroa-virus-networks"
+
+I save all the big outputs results in my local storage, on OneDrive:
+"/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results"
+
+NOTE: before running this Rmd, first run (1)"varroa virus networks.Rmd" , then (2)"varroa_modules.rmd"
+```{r libraries}
+# load library
+library(dplyr)
+library(tidyverse)
+library(vegan)
+library(DESeq2)
+library(ggfortify)
+library(WGCNA)
+library(rmarkdown)
+library("knitr") # for the markdown
+library("kableExtra") # for creating a scrolling table
+library("ggplot2") # for plotting 
+library("ape") # for reading the phylogenetic tree and for mantel.test
+library("Biostrings")
+library("ggtree") # for plotting the tree
+library("ggrepel") # for spreading text labels on the plot
+library("scales") # for axis labels notation
+library("GO.db")
+library("reshape2")
+library("RSQLite")
+library("AnnotationDbi")
+library("GSEABase")
+library("GOstats")
+library("maps") # for the map background
+library("leaflet") #for the interactive maps
+library("htmltools")
+library("rgdal")
+library("grid")
+library("gridExtra")
+library("GeneOverlap")
+library(cluster)
+```
+
+
+### import a varroa and virus data, from "varroa_modules".Rmd, and reduce libraries - only adult females
+```{r }
+setwd("/Users/nuriteliash/Documents/GitHub/varroa-virus-networks")
+
+# Load all 71 libraries with all varroa genes and viruses
+load(file = "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/gene_tpm.RData")
+
+final_gene_tpm  
+
+#remove libraries (by col):
+# 5 outlier libraries ("SRR5109825", "SRR5109827", "SRR533974" , "SRR3927496", "SRR8867385")
+# and 9 non-female libraries (SRR5760848, SRR5760838, SRR5760828, SRR5760818, SRR5377265 ,SRR5377270 ,SRR5377269 ,SRR5377263 ,SRR5377266)
+# we are left with 57 libraries of female mites. 
+for_modules_female <- final_gene_tpm %>%   
+  dplyr::select(-c("SRR5760848", "SRR5760838", "SRR5760828", "SRR5760818", "SRR5377265" ,"SRR5377270" ,"SRR5377269" ,"SRR5377263" ,"SRR5377266")) %>%
+  transposeBigData()
+
+saveRDS(for_modules_female, file = "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/for_modules_female.rds")
+```
+
+now the table is ready for varroa module making!
+
+# following the 2.a step in WGCNA tutorial: "Automatic, one-step network construction and module detection"
+###  WGCNA set directory and library
+```{r}
+#=====================================================================================
+#
+#  Code chunk 1
+#
+#=====================================================================================
+
+# If necessary, change the path below to the directory where the data files are stored.
+setwd("/Users/nuriteliash/Documents/GitHub/varroa-virus-networks")
+# Display the current working directory
+getwd()
+
+
+# Allow multi-threading within WGCNA. This helps speed up certain calculations.
+options(stringsAsFactors = FALSE)
+
+```
+### 2.a.1 Choosing the soft-thresholding power: analysis of network topology
+```{r}
+#=====================================================================================
+#
+#  Code chunk 2
+#
+#=====================================================================================
+
+# Choose a set of soft-thresholding powers
+powers = c(c(1:10), seq(from = 12, to=25, by=2))
+# Call the network topology analysis function
+sft = pickSoftThreshold(for_modules_female, powerVector = powers, verbose = 5)
+# Plot the results:
+sizeGrWindow(9, 5)
+par(mfrow = c(1,2));
+cex1 = 0.9;
+# Scale-free topology fit index as a function of the soft-thresholding power
+plot(sft$fitIndices[,1], -sign(sft$fitIndices[,3])*sft$fitIndices[,2],
+     xlab="Soft Threshold (power)",ylab="Scale Free Topology Model Fit,signed R^2",type="n",
+     main = paste("Scale independence"));
+text(sft$fitIndices[,1], -sign(sft$fitIndices[,3])*sft$fitIndices[,2],
+     labels=powers,cex=cex1,col="red");
+# this line corresponds to using an R^2 cut-off of h
+abline(h=0.80,col="red")
+# Mean connectivity as a function of the soft-thresholding power
+plot(sft$fitIndices[,1], sft$fitIndices[,5],
+     xlab="Soft Threshold (power)",ylab="Mean Connectivity", type="n",
+     main = paste("Mean connectivity"))
+text(sft$fitIndices[,1], sft$fitIndices[,5], labels=powers, cex=cex1,col="red")
+```
+
+### Constructing the gene network and identifying modules is now a simple function call:
+the aim of analyzing only female modules is to find matching modules between the 66 lib (containing all mites), and the 57 libs (excluding male libs).
+as we wish to generalize our anlaysis conclusions to all mites, we aim to detect specific genes that are important in both types of analysis (66 libs and 57 libs)
+for that, we will construct networks from 57 libs, aiming to have about the same number of modules, in both WGCNAs. 
+playing with the "mergeCutHeight" value, i find that "mergeCutHeight = 0.22" gives 14 modules, the same as in the 66 libs, with "mergeCutHeight = 0.25". 
+we therefore set the mergeCutHeight = 0.22, and the power = 10.
+```{r}
+#=====================================================================================
+#
+#  Code chunk 3 - automatic!
+#
+#=====================================================================================
+
+net = blockwiseModules(for_modules_female, power = 10,
+                       TOMType = "unsigned", minModuleSize = 30,
+                       reassignThreshold = 0, mergeCutHeight = 0.22,
+                       numericLabels = TRUE, pamRespectsDendro = FALSE,
+                       saveTOMs = TRUE,
+                       saveTOMFileBase = "Varroa_modulesTOM", 
+                       verbose = 3)
+
+# To see how many modules were identified and what the module sizes are, one can use table(net$colors). Its output is 
+ 
+table(net$colors)
+```
+
+The hierarchical clustering dendrogram (tree) used for the module identification is returned in net$dendrograms[[1]];
+The dendrogram can be displayed together with the color assignment using the following code
+```{r}
+#=====================================================================================
+#
+#  Code chunk 4 - automatic!
+#
+#=====================================================================================
+
+# open a graphics window
+sizeGrWindow(12, 9)
+# Convert labels to colors for plotting
+mergedColors = labels2colors(net$colors)
+# Plot the dendrogram and the module colors underneath
+plotDendroAndColors(net$dendrograms[[1]], mergedColors[net$blockGenes[[1]]],
+                    "Module colors",
+                    dendroLabels = FALSE, hang = 0.03,
+                    addGuide = TRUE, guideHang = 0.05)
+```
+
+save the module assignment and module eigengene information necessary for subsequent analysis:
+```{r}
+#=====================================================================================
+#
+#  Code chunk 5
+#
+#=====================================================================================
+
+moduleLabels_57 = net$colors
+moduleColors_57 = labels2colors(net$colors)
+MEs_57 = net$MEs;
+geneTree_57 = net$dendrograms[[1]];
+save(MEs_57, moduleLabels_57, moduleColors_57, geneTree_57, 
+     file = "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/Varroa_modules_networkConstruction-auto_57.RData")
+```
+
+### Relating modules to external information and identifying important genes
+prepare the "virus load" table (like the "clinicalTraits.csv") of virus variables you wish to correlate to varroa modules
+```{r}
+viruses_load <- read_rds("/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/viruses_load.RData")
+
+viruses_load 
+
+#make a viruses load file with the 15 viruses, and 57 libs:
+b_viruses_load_57 <- viruses_load %>%
+  # filter for specific viruses (15)
+  filter(description %in% c("DWVa", "DWVc", "IAPV", "ABPV", "BQCV","SV", "VDV1/DWVb", "VDV2", "VDV3", "BMV", "ARV_2", "AmFV","VTLV","VDV4","VOV_1")) %>%
+  column_to_rownames("description") %>% 
+  transposeBigData() %>%
+  rownames_to_column("library") %>%
+  #remove all non-female libraries
+  filter(!(library %in% c("SRR5760848", "SRR5760838", "SRR5760828", "SRR5760818", "SRR5377265" ,"SRR5377270" ,"SRR5377269" ,"SRR5377263" ,"SRR5377266"))) %>% 
+  column_to_rownames("library")
+
+# The last step is to save the relevant expression and trait data for use in the next steps 
+save(for_modules_female, b_viruses_load_57, file = "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/varroa_virus-01-dataInput_57.RData")
+```
+
+### WGCNA 3.a Quantifying module–trait associations
+```{r}
+#if you are starting from here,  
+# Load the expression and trait data saved in the first part 
+lnames <- load(file = "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/varroa_virus-01-dataInput_57.RData"); 
+
+#The variable lnames contains the names of loaded variables. 
+lnames 
+
+# Load network data saved in the second part.
+lnames = load(file = "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/Varroa_modules_networkConstruction-auto_57.RData"); 
+lnames
+
+# Define numbers of genes and samples
+nGenes = ncol(for_modules_female);
+nSamples = nrow(for_modules_female);
+# Recalculate MEs with color labels 
+MEs0 = moduleEigengenes(for_modules_female, moduleColors_57)$eigengenes
+MEs_57 = orderMEs(MEs0)
+
+moduleTraitCor = cor(MEs_57, b_viruses_load_57, use = "p");
+moduleTraitPvalue = corPvalueStudent(moduleTraitCor, nSamples)
+
+### Controlling the false discovery rate: Benjamini–Hochberg procedure ###
+# using p.adjust function, for all comparisons, 15 modules and 15 viruses (m=225). 
+
+# first make the p-value matrix into a dataframe
+moduleTraitPvalue_0 <- as.data.frame(moduleTraitPvalue)
+
+# then "gather" all the p-values, so they will apear in one column
+longer_Pvalue <- moduleTraitPvalue_0 %>% 
+    rownames_to_column("module") %>%
+    gather("virus", "pvalue", -module)
+
+# now calculate the p.adjust for each p-value 
+Padjust <- p.adjust(longer_Pvalue$pvalue, method = "fdr")
+
+# and add the column of adjusted pvalues
+Padjust <- add_column(longer_Pvalue, Padjust)
+
+# now spread it back
+moduleTraitPadjust <- Padjust %>% 
+    dplyr::select(-pvalue) %>% 
+    group_by(virus) %>%
+    pivot_wider(names_from = virus, values_from = Padjust)
+moduleTraitPadjust <- column_to_rownames(moduleTraitPadjust, "module")
+
+# before correlating, make the two dataframes into "matrixes"
+moduleTraitCor_57 <- as.matrix(moduleTraitCor)
+moduleTraitPadjust_57 <- as.matrix(moduleTraitPadjust)
+
+# save the matrices for next analysis
+save(moduleTraitCor_57,moduleTraitPadjust_57, file = "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/moduleTraitCor_57.RData")
+```
+
+# Can we predict the virus-varroa interaction given the virus abundance? 
+mantel.test: the corelation btw two matrices
+```{r}
+# x: how virus interacts with varroa expression, and y: the correlation of viral abundance across samples}
+
+# load the two matrices, **of the 57 libs**:
+# the module–trait association matrix 
+names <- load(file = "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/moduleTraitCor_57.RData"); 
+names
+
+# and the viral abundance correlogram
+names <- load(file = "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/virusAbundCor_57.RData"); 
+names
+
+# make correlation matrix of the "moduleTraitCor":
+corModulTrait_57 <- cor(moduleTraitCor_57)
+
+# (1) Mantel test using "ape" library:
+mantel.test(corModulTrait_57, virusAbundCor_57, graph = TRUE,
+            main = "Mantel test",
+            xlab = "z-statistic", ylab = "Density",
+            sub = "The vertical line shows the observed z-statistic")
+
+  
+# (2) Mantel test using "vegan" library:
+mantel(corModulTrait_57, virusAbundCor_57, method="pearson", permutations=1000)
+```
+
+###WGCNA 3.a Quantifying module–trait associations
+```{r}
+sizeGrWindow(10,6)
+# Will display correlations and their p-values
+textMatrix = paste(signif(moduleTraitCor, 2), "\n(",
+signif(moduleTraitPadjust, 1), ")", sep = "");
+dim(textMatrix) = dim(moduleTraitCor)
+par(mar = c(6, 8.5, 3, 3));
+# Display the correlation values within a heatmap plot
+labeledHeatmap(Matrix = moduleTraitCor,
+xLabels = names(b_viruses_load_57),
+yLabels = names(MEs_57),
+ySymbols = names(MEs_57),
+colorLabels = FALSE,
+colors = blueWhiteRed(50),
+textMatrix = textMatrix,
+setStdMargins = FALSE,
+cex.text = 0.7,
+zlim = c(-1,1),
+main = paste("adult female Module-viruses relationships"))
+```
+
+###hirarchial clustering 
+```{r}
+#plot hirarchial clustering of the viruses, based to their correlation to the varroa modules.
+plot(hclust(dist(abs(transposeBigData(moduleTraitCor)))))
+
+```
+
+We quantify associations of individual genes with our trait of interest (total_load ) by defining Gene Significance GS as (the absolute value of) the correlation between the gene and the trait. 
+For each module, we also define a quantitative measure of module membership MM as the correlation of the module eigengene and the gene expression profile. 
+This allows us to quantify the similarity of all genes on the array to every module.
+
+### WGCNA 3.b Gene relationship to trait and important modules: Gene Significance and Module Membership
+```{r}
+# names (colors) of the modules
+modNames = substring(names(MEs_57), 3)
+virusNames = substring(names(b_viruses_load_57), 1)
+
+#make a table of the Module-membership ("MM") of each gene (which is its correlation coefficient, pearson)
+geneModuleMembership_57 = as.data.frame(cor(for_modules_female, MEs_57, use = "p"));
+MMPvalue = as.data.frame(corPvalueStudent(as.matrix(geneModuleMembership_57), nSamples));
+
+#change the name of the columns to start with "MM" then the module name
+names(geneModuleMembership_57) = paste("MM", modNames, sep="");
+names(MMPvalue) = paste("p.MM", modNames, sep="");
+
+# make a table with the Trait-significance ("GS") for each gene (which is its correlation coefficient, pearson)
+geneTraitSignificance_57 = as.data.frame(cor(for_modules_female, b_viruses_load_57, use = "p"));
+GSPvalue = as.data.frame(corPvalueStudent(as.matrix(geneTraitSignificance_57), nSamples));
+
+#rename the col names by adding the initial "GS." for genesignificance, and "p.GS." for p-value.
+names(geneTraitSignificance_57) = paste("GS.", names(b_viruses_load_57), sep="");
+names(GSPvalue) = paste("p.GS.", names(b_viruses_load_57), sep="");
+
+#save data:
+save(geneTraitSignificance_57,geneModuleMembership_57, file = "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/geneTraitANDgeneMM_57.RData")
+```
+
+Using the GS and MM measures, we can identify genes that have a high significance for total_load as well as high module membership in interesting modules. 
+
+the following verboseScatterplot plots the Varroa genes, based on the correlation between: 
+- their MM value (geneModuleMembership), against 
+- their GS value (geneTraitSignificance).
+
+to get the interaction of each module, against each virus, just change the "module" and "virus" at the beginning of the code.
+
+###WGCNA 3.c Intramodular analysis: identifying genes with high GS and MM
+```{r}
+sizeGrWindow(8,6)
+par(mfrow=c(2,2))
+module = "black"
+virus = "DWVa"
+column = match(module, modNames);
+column1 = match(virus, virusNames);
+moduleGenes = moduleColors==module;
+verboseScatterplot(abs(geneModuleMembership_57[moduleGenes, column]),
+                   abs(geneTraitSignificance_57[moduleGenes, column1]),
+                   xlab = paste("Module Membership in", module, "module"),
+                   ylab = paste("Gene significance for" ,virus, "viral load"),
+                   main = paste(module, "Module membership vs. gene", virus, "significance\n 57 libraries; "),
+                   cex.main = 1.2, cex.lab = 1.2, cex.axis = 1.2, col = module)
+module = "black"
+virus = "VDV2"
+column = match(module, modNames);
+column1 = match(virus, virusNames);
+moduleGenes = moduleColors==module;
+verboseScatterplot(abs(geneModuleMembership_57[moduleGenes, column]),
+                   abs(geneTraitSignificance_57[moduleGenes, column1]),
+                   xlab = paste("Module Membership in", module, "module"),
+                   ylab = paste("Gene significance for" ,virus, "viral load"),
+                   main = paste("Module membership vs. gene significance\n for the 57 libraries. "),
+                   cex.main = 1.2, cex.lab = 1.2, cex.axis = 1.2, col = module)
+module = "black"
+virus = "ARV_2"
+column = match(module, modNames);
+column1 = match(virus, virusNames);
+moduleGenes = moduleColors==module;
+verboseScatterplot(abs(geneModuleMembership_57[moduleGenes, column]),
+                   abs(geneTraitSignificance_57[moduleGenes, column1]),
+                   xlab = paste("Module Membership in", module, "module"),
+                   ylab = paste("Gene significance for" ,virus, "viral load"),
+                   main = paste("Module membership vs. gene significance\n for the 57 libraries. "),
+                   cex.main = 1.2, cex.lab = 1.2, cex.axis = 1.2, col = module)
+```
+
+as intramodular connectivity (KIn) and module membership (MM) are positively and linearly correlated, 
+similarly, we can plot the interaction of the geneTraitSignificance to the intramodular connectivity for each gene.
+ 
+## 7. Module membership, intramodular connectivity and screening for intramodular hub genes
+[link for the tutorial](https://horvath.genetics.ucla.edu/html/CoexpressionNetwork/Rpackages/WGCNA/Tutorials/Simulated-07-Membership.pdf) 
+### 7.a Intramodular connectivity
+```{r}
+# We begin by calculating the intramodular connectivity for each gene. (In network literature, connectivity is often referred to as ”degree”.) The function intramodularConnectivity computes the whole network connectivity kTotal, the within module connectivity kWithin, kOut=kTotal-kWithin, and kDiff=kIn-kOut=2*kIN-kTotal
+
+ADJ1_57 <- abs(cor(for_modules_female,use="p"))^6
+Alldegrees1_57 <- intramodularConnectivity(ADJ1_57, moduleColors_57)
+head(Alldegrees1_57)
+
+#save it 
+save(Alldegrees1_57, file = "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/IntraModCon57.RData")
+```
+
+### 7.b Relationship between gene significance and intramodular connectivity
+```{r}
+#We plot the gene significance against intramodular connectivity, *per virus*:
+colorlevels=unique(moduleColors_57)
+sizeGrWindow(9,6)
+par(mfrow=c(2,as.integer(0.5+length(colorlevels)/2)))
+par(mar = c(4,5,3,1))
+for (i in c(1:length(colorlevels)))
+{
+  whichmodule=colorlevels[[i]];
+  restrict1 = (moduleColors_57==whichmodule);
+  verboseScatterplot(Alldegrees1_57$kWithin[restrict1],
+                     geneTraitSignificance_57$GS.VDV2[restrict1], col=moduleColors_57[restrict1],
+                     main=whichmodule,
+                     xlab = "Connectivity", ylab = "Gene Significance", abline = TRUE)
+}
+```
+
+### 7.c Generalizing intramodular connectivity for all genes on the array
+```{r}
+# We define a data frame containing the module membership (MM) values for each module. In the past, we called the module membership values kME.
+datKME_57=signedKME(for_modules_female, MEs_57, outputColumnName="MM.")
+# Display the first few rows of the data frame
+head(datKME_57)
+
+#We have a module membership value for each gene in each module.
+```
+
+### 7.e Relationship between the module membership and intramodular connectivity
+זה לא עובד כרגע, אני לא בטוחה למה
+```{r}
+#We now explore the relationship between the module membership measures (e.g. MM.magenta) and intramodular connectivity
+# this is an important check to see that the data are ok
+sizeGrWindow(8,6)
+par(mfrow=c(2,2))
+# We choose 4 modules to plot: magenta, red, salmon, brown
+# For simplicity we write the code out explicitly for each module.
+which.color="black";
+restrictGenes=moduleColors_57==which.color
+verboseScatterplot(Alldegrees1_57$kWithin[ restrictGenes],
+                   (datKME_57[restrictGenes, paste("MM.", which.color, sep="")])^6,
+                   col=which.color,
+                   xlab="Intramodular Connectivity",
+                   ylab="(Module Membership)^6")
+
+which.color="purple";
+restrictGenes=moduleColors_57==which.color
+verboseScatterplot(Alldegrees1_57$kWithin[ restrictGenes],
+                   (datKME_57[restrictGenes, paste("MM.", which.color, sep="")])^6,
+                   col=which.color,
+                   xlab="Intramodular Connectivity",
+                   ylab="(Module Membership)^6")
+
+which.color="pink";
+restrictGenes=moduleColors_57==which.color
+verboseScatterplot(Alldegrees1_57$kWithin[ restrictGenes],
+                   (datKME_57[restrictGenes, paste("MM.", which.color, sep="")])^6,
+                   col=which.color,
+                   xlab="Intramodular Connectivity",
+                   ylab="(Module Membership)^6")
+
+which.color="salmon";
+restrictGenes=moduleColors_57==which.color
+verboseScatterplot(Alldegrees1_57$kWithin[ restrictGenes],
+                   (datKME_57[restrictGenes, paste("MM.", which.color, sep="")])^6,
+                   col=which.color,
+                   xlab="Intramodular Connectivity",
+                   ylab="(Module Membership)^6")
+
+
+#The resulting plot is shown in Fig. 2. Note that after raising the module membership to a power of 6, it is highly correlated with the intramodular connectivity (kWithin).
+```
+
+### 7.d Finding genes with high gene significance and high intramodular connectivity in interesting modules
+Our previous analysis has shown that the *magenta* module is an “interesting” module in that its module significance is high. Here we show how to find genes with high gene significance and high intramodular connectivity in the magenta module.
+
+we wish to filter out genes with:
+1. high module connectivity
+2. significant correlation with viral load (specific viruses)
+
+```{r eval=FALSE, include=FALSE}
+# We define a data frame containing the module membership (MM) values for each module. In the past, we called the module membership values kME.
+datKME_57=signedKME(for_modules_female, MEs_57, outputColumnName="MM.")
+
+#simple code for one module-virus interaction:
+#FilterGenes= abs(geneTraitSignificance$GS.DWVa)> .2 & abs(datKME$MM.magenta)>.8
+#table(FilterGenes)
+#dimnames(data.frame(for_modules))[[2]][FilterGenes]
+
+#but we want to look at all possible interactions, so we make a function:
+# we make a function "filterGenes" to filter for the first most significant hub-genes in each module-virus pair:
+  filterGenes_57 <- function(vload.tbl, datKME_57, genes, virus.col.name, module.name) {
+    GS_virus <- as.numeric(cor(vload.tbl[,virus.col.name],genes, use="p"))
+    FilterGenes <- abs(GS_virus) > 0.2 & abs(datKME_57[,module.name]) > 0.45
+    inds <- which(FilterGenes == TRUE)
+    #Which genes were filtered in?
+    genes <- colnames(genes)[inds]
+    #What are their connectivity coefficient?  
+    con <- datKME_57[,module.name][inds]
+    #What are their virus-correlation coefficient?
+    virus_coef <- GS_virus[inds]
+    # sort the genes in descending order, according to the absolute value of the connectivity
+    abs.con <- abs(con)
+    hub <- data.frame(genes,con,abs.con,virus_coef)
+    hub <- hub[order(hub$abs.con, decreasing = TRUE),] 
+    # take the first 50 hubgenes
+    hub <- hub[0:50,]
+    #hub <- select(.data = hub, -abs.con)
+    return(hub)
+  }
+
+# now we can run it for each virus-module pair (indexed as "i" and "j" respectievly),
+
+# assign the files to the sequences in the for-loop
+viruses <- colnames(b_viruses_load_57)
+modules <- colnames(datKME_57)
+# we make a list, in which the tables will be saved 
+ls.57 <- list()
+
+for (i in 1:length(viruses)) {
+  for (j in 1:length(modules)) {
+    ls.name <- paste(viruses[i], modules[j], sep = "_")
+    ls.57[[ls.name]] <- filterGenes_57(b_viruses_load_57, datKME_57, for_modules_female, viruses[i], modules[j])
+    ls.57[[ls.name]]$virus <- viruses[i]
+    ls.57[[ls.name]]$module <- modules[j]
+    ls.57[[ls.name]] <- na.omit(ls.57[[ls.name]])
+    cat(ls.name, " is done!\n")
+  }
+}
+
+hist(sapply(ls.57, nrow))
+
+ls.57.tbl <- bind_rows(ls.57)
+q=sapply(ls.57, function(x) sum(is.na(x)))
+sum(q > 0)
+
+#save the list as RData in the local folder fo later overlapping:
+save(ls.57.tbl, ls.57, file = "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/HubGenes_57.RData")
+```

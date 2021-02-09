@@ -1,0 +1,135 @@
+---
+title: "DE analysis- virus load as explanatory variable"
+author: "Nurit"
+date: "4/23/2020"
+output: html_document
+---
+
+
+```{r libraries}
+library(sleuth)
+library(tidyverse)
+library(DESeq2)
+```
+
+
+```{r upload kallisto data, echo=TRUE}
+setwd("/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks")
+
+# The first step in a sleuth analysis is to specify where the kallisto results are stored. A variable is created for this purpose with
+sample_id <- list.dirs(path = "sleuth/kallistoAll", full.names = FALSE) 
+#sample_id <- sub("(.*).tsv.gz","\\1", sample_id)
+
+
+#original code. אני לא בטוחה מה ההבדל בין הפקודות. אבל הפקודה המקורית מחזירה וקטור ריק.  
+#sample_id <- dir(file.path("..", "results"))
+
+
+# A list of paths to the kallisto results indexed by the sample IDs is collated with
+kal_dirs <- file.path("sleuth/kallistoAll", sample_id)
+#remove the first element (i dont know why, but the first element is an emtpy folder)
+kal_dirs <- kal_dirs[-1]
+
+#original code:
+#kal_dirs <- file.path("..", "results", sample_id, "kallisto")
+
+# The next step is to load an auxillary table that describes the experimental design and the relationship between the kallisto directories and the samples:
+# read the table with the libraries description:
+ModTraitFac_71 <- read.csv("/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks/module_trait_factors_71.csv", stringsAsFactors=TRUE) 
+
+# load the viruses load by library, for all 23 viruses
+lnames <- load(file = "viruses_load.RData"); 
+
+# make a data frame of the viral loads of DWVa and VDV2 to each library (the explanatory variable)
+exp_var <- viruses_load %>%
+    filter(description %in% c("DWVa", "VDV2")) %>%
+    column_to_rownames("description") %>%
+    t() %>%
+    as.data.frame() %>%
+    rownames_to_column("Library")
+  
+
+# join the two tables (rename the library as "sample" to match the next steps)
+# **for DWVa**:
+s2c <- left_join(exp_var, ModTraitFac_71 ,by = "Library") %>%
+    dplyr::select(sample = Library, condition = DWVa)
+# *there is a problem joining 4 libs, their factors doesnt join. i dont know why*
+
+
+# Now the directories must be appended in a new column to the table describing the experiment. This column must be labeled path, otherwise sleuth will report an error. This is to ensure that samples can be associated with kallisto quantifications.
+s2c <- dplyr::mutate(s2c, path = kal_dirs)
+
+#It is important to check that the pairings are correct:
+print(s2c)
+```
+
+Next, the “sleuth object” can be constructed. This object will store not only the information about the experiment, but also details of the model to be used for differential testing, and the results. It is prepared and used with four commands that (1) load the kallisto processed data into the object (2) estimate parameters for the sleuth response error measurement (full) model (3) estimate parameters for the sleuth reduced model, and (4) perform differential analysis (testing) using the likelihood ratio test. On a laptop the four steps should take about a few minutes altogether.
+```{r echo=TRUE}
+# The sleuth object must first be initialized with (this can take a few minutes)
+so <- sleuth_prep(s2c, extra_bootstrap_summary = TRUE)
+
+# somewhere in here i need to take out the viruses reads from the analyais. 
+# load the "virusId" file with viruses accessions: 
+#lnames <- load(file = "viruses.RData");
+```
+
+### fit models
+```{r eval=FALSE}
+# Then the full model is fit with
+so <- sleuth_fit(so, ~condition, 'full')
+
+# What this has accomplished is to “smooth” the raw kallisto abundance estimates for each sample using a linear model with a parameter that represents the experimental condition (in this case DWVa as a continouse explenatory variable). To test for transcripts that are differential expressed between the conditions, sleuth performs a second fit to a “reduced” model that presumes abundances are equal in the *two conditions*. To identify differential expressed transcripts sleuth will then identify transcripts with a significantly better fit with the “full” model.
+
+# The “reduced” model is fit with
+so <- sleuth_fit(so, ~1, 'reduced')
+
+# and the test is performed with
+so <- sleuth_lrt(so, 'reduced', 'full')
+
+# In general, sleuth can utilize the likelihood ratio test with any pair of models that are nested, and other walkthroughs illustrate the power of such a framework for accounting for batch effects and more complex experimental designs.
+# The models that have been fit can always be examined with the models() function.
+models(so)
+
+# The results of the test can be examined with
+sleuth_table <- sleuth_results(so, 'reduced:full', 'lrt', show_all = FALSE)
+# from "sleuth_table" remove all 23 viruses (28 transcripts, as VOV_1 has 6 fregments), and leave only varroa transcripts
+sleuth_table <- sleuth_table %>% filter(!(target_id %in% c("NC_004830.2", "KY354234.1", "MK032465.1", "MK032466.1", "MK032467.1", "MK032468.1", "MK032469.1", "MK032470.1", "NC_027631.1", "KR819915.1", "NC_002548.1", "NC_027619.1", "NC_009025.1", "NC_002066.1", "NC_006494.1", "ENA|CEND01000001|CEND01000001.1"	, "NC_003784.1", "KX578272.1", "NC_040601.1", "MK032464.1"	, "NC_004807.1", "NC_010711.1", "NC_014137.1", "NC_032433.1", "NC_035071.1", "KY354240.1", "MG571088.1", "MG571087.1")))
+
+sleuth_significant <- dplyr::filter(sleuth_table, qval <= 0.05)
+head(sleuth_significant, 20)
+
+# The table shown above displays the top 20 significant genes with a (Benjamini-Hochberg multiple testing corrected) q-value <= 0.05.
+
+```
+
+Now we wish to plot the bootstraps against the viral load as a continous variable. 
+However, the sleuth package doesnt apply for continous variables,
+so we need to import the data and analyse it using DESeq 2:
+ 
+## Analyzing RNA-seq data with DESeq2 (Love et al. 2014)
+***
+> Import transcript-level estimates from kallisto (Soneson et al. 2015) [Import tutorial](https://bioconductor.org/packages/release/bioc/vignettes/tximport/inst/doc/tximport.html#import_transcript-level_estimates) 
+```{r echo=TRUE}
+library(tximport)
+library(rhdf5)
+
+# First, we locate the directory containing the files
+dir <- file.path("/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks/sleuth/kallistoAll")
+list.files(dir)
+
+# kallisto abundance.h5 files can be imported by setting type to "kallisto"
+files <- file.path(dir, "kallisto_boot", samples$run, "abundance.h5")
+names(files) <- paste0("sample", 1:6)
+txi.kallisto <- tximport(files, type = "kallisto", txOut = TRUE)
+head(txi.kallisto$counts)
+```
+ 
+
+### Analyzing RNA-seq data with DESeq2 (Love etl. 2014)
+#### Standard workflow
+[DESeq 2 tutorial](https://bioconductor.org/packages/release/bioc/vignettes/DESeq2/inst/doc/DESeq2.html) 
+
+Here we show the most basic steps for a differential expression analysis. 
+This code chunk assumes that you have a count matrix called "cts" and a table of sample information called "coldata". 
+The design indicates how to model the samples, here, that we want to measure the effect of the "condition", controlling for batch differences. The two factor variables "batch" and "condition" should be columns of "coldata."
+
