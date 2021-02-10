@@ -6,14 +6,16 @@ output: html_document
 ---
 NOTE: first run "varroa virus networks.Rmd", then "varroa_modules".rmd then "varroa_modules_females.rmd"
 
-```{r eval=FALSE, include=FALSE}
+```{r data storage, eval=FALSE, include=FALSE}
 #this analysis is on the 66 and the 57 libraries 
 
 #the working directory is in GitHb:
-"/Users/nuriteliash/Documents/GitHub/varroa-virus-networks"
+setwd("/Users/nuriteliash/Documents/GitHub/varroa-virus-networks")
 
 #I save all the big outputs results in my local storage, on OneDrive:
 "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results"
+
+knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r libraries, include=FALSE}
@@ -51,7 +53,7 @@ library(ggpmisc)
 library(DEGreport)
 ```
 
-Aim: find genes appear in overlapping modules of the 66 and 57b libraries.
+# Aim: to find genes appear in matching modules of the 66 and 57 libraries.
 
 before we continue to explore the genes in Magenta module (in the 66 analysis), we need to be sure that they overlap those in the matching module in the female-only analysis (57 libraries).
 
@@ -69,6 +71,9 @@ names
 #load the genes tpm per library, and viral load:
 names <- load(file = "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/varroa_virus-01-dataInput.RData")
 names
+#load the correlation data for the module-trait relationship:
+names <- load("/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/moduleTraitCor_66.RData")
+names
 
 # and of the 57 libraries analysis:
 names <- load("/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/Varroa_modules_networkConstruction-auto_57.RData")
@@ -80,8 +85,10 @@ names
 #load the genes tpm per library, and viral load:
 names <- load(file = "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/varroa_virus-01-dataInput_57.RData")
 names
+#load the correlation data for the module-trait relationship:
+names <- load("/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/moduleTraitCor_57.RData")
+names
 ```
-
 
 ### Finding matching modules (66 all libraries vs. 57 female libraries)
 ```{r}
@@ -110,13 +117,12 @@ compareModules
 # (module number 12) MM.tan == MM.pink (module number 8)ma
 # (module number 13) MM.salmon == MM.purple (module number 10)
 # (module number 14) MM.cyan == MM.magenta (module number 9)
-
 ```
 
 according to "Module-Trait interaction", Magenta module looks interesting, as it have a negative correlation with DWVa, and positive correlation with VDV2.
 the matching module of Magenta (66libs) is black (57libs).
 So we gonna overlap the black module from 57, to magenta genes, from 66, using inner_join(),to get a table containing the overlapping genes, their geneTraitSignificance (for DWVa, ARV_2 and VDV2), geneModuleMembership, and Intramodular connectivity
-```{r} 
+```{r}
 geneInfoMagenta_66 = data.frame(
   module = moduleColors,
   geneTraitSignificance_66,
@@ -183,44 +189,50 @@ nrow(overlap_annot)
 write_csv(x = as.data.frame(overlap_annot), "results/overlap_annot.csv")
 ```
 
-### check the old hubgenes - and specifically the silenced genes.
+## check the old-hubgenes - and specifically the silenced genes.
+1. does the overlaping genes share genes with the old-hubgenes?
+2. to which module the silenced genes, and specifically the silenced genes, belong to?
 ```{r}
 #load the former hub-genes:
 hub_old <- read_csv("/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/data/hub_annot_old.csv", col_names = TRUE, ) 
 hub_old$genes <- as.character(hub_old$genes)
 
-#make a data.frame of all genes with modules:
-all.genes.66 <- data.frame(
-  module = moduleColors,
-  geneTraitSignificance_66,
-  geneModuleMembership_66,
-  IntraModCon = Alldegrees1_66$kWithin) %>%
-  dplyr::select(c(module, IntraModCon, GS.DWVa, GS.VDV2, GS.ARV_2)) %>%
-  rownames_to_column("genes")
-
 # how many of the hub_old genes exist in the magenta module?
 #return all rows from x, and all columns from x and y. 
 f <- left_join(geneInfoMagenta_66, hub_old, by = "genes")
-f
+
 sum(!is.na(f$virus.x))
 
 # only 3 genes of magenta module appear in the former hubgene. analysis
 # so to what module these 53-hubgenes belong to?
 
-e <- left_join(hub_old, all.genes.66, by = "genes")
-e
+#make a data.frame of all genes with modules:
+all.genes.66 <- data.frame(
+  module = moduleColors,
+  geneTraitSignificance_66,
+  GSPadjust_66,
+  geneModuleMembership_66,
+  MMPadjust_66,
+  IntraModCon = Alldegrees1_66$kWithin) %>%
+  dplyr::select(c(module, IntraModCon, GS.DWVa, pdj.GS.DWVa, GS.VDV2, pdj.GS.VDV2, GS.ARV_2, pdj.GS.ARV_2, MMpurple, padj.MMpurple, MMpink, padj.MMpink)) %>%
+  rownames_to_column("genes")
+
+left_join(hub_old, all.genes.66, by = "genes")
+
 # in the 66 libs, most of them belong to the purple module 
 
 all.genes.57 <- data.frame(
   module = moduleColors_57,
   geneTraitSignificance_57,
+  GSPadjust_57,
   geneModuleMembership_57,
+  MMPadjust_57,
   IntraModCon = Alldegrees1_57$kWithin) %>%
-  dplyr::select(c(module, IntraModCon, MMmagenta, GS.DWVa, GS.VDV2, GS.ARV_2)) %>%
+  dplyr::select(c(module, IntraModCon, GS.DWVa, pdj.GS.DWVa, GS.VDV2, pdj.GS.VDV2, GS.ARV_2, pdj.GS.ARV_2, MMsalmon, padj.MMsalmon)) %>%
   rownames_to_column("genes")
 
-g <- left_join(hub_old, all.genes.57, by = "genes")
-g
+left_join(hub_old, all.genes.57, by = "genes")
+
 # in the 57 libs, most belong to the salmon module.
 
 # what about the silenced genes? to which module they belong to?
@@ -232,7 +244,7 @@ silenced.genes <- data.frame(genes, ShortName, annot)
 
 # to what module the silenced genes belong to?
 silenced_overlap.66 <- left_join(silenced.genes, all.genes.66, by = "genes")
-
+silenced_overlap.57 <- left_join(silenced.genes, all.genes.57, by = "genes")
 # of the 11 genes, 8 belong to purple module, 2 to pink and 1 to green. 
 # all have negative interaction with DWVa. 
 ```
@@ -241,6 +253,63 @@ silenced_overlap.66 <- left_join(silenced.genes, all.genes.66, by = "genes")
 (1) virus > module (virus tpm > module eigengene) , which is actually “module-trait interaction”.
 (2) Module > gene (eigengene > gene tpm), 
 (3) Virus > gene (virus tpm > gene tpm), which is GeneSignificance. 
+
+## (1) virus > module (virus tpm > module eigengene). 
+### Quantifying module–trait associations, for the 66 libraries
+```{r from the chunk of WGCNA 3.a Quantifying module–trait associations, eval=F, echo=T}
+# first Recalculate MEs with color labels 
+MEs0 = moduleEigengenes(for_modules, moduleColors)$eigengenes
+MEs = orderMEs(MEs0)
+
+sizeGrWindow(10,6)
+# Will display correlations and their p-values
+textMatrix = paste(signif(moduleTraitCor_66, 2), "\n(",
+                   signif(moduleTraitPadjust_66, 1), ")", sep = "");
+dim(textMatrix) = dim(moduleTraitCor_66)
+par(mar = c(6, 8.5, 3, 3));
+# Display the correlation values within a heatmap plot
+heat66 <- labeledHeatmap(Matrix = moduleTraitCor_66,
+               xLabels = names(b_viruses_load),
+               yLabels = names(MEs),
+               ySymbols = names(MEs),
+               colorLabels = FALSE,
+               colors = blueWhiteRed(50),
+               textMatrix = textMatrix,
+               setStdMargins = FALSE,
+               cex.text = 0.7,
+               zlim = c(-1,1),
+               main = paste("Varroa Module-viruses relationships, all 66 libraries"))
+heat66
+```
+
+### Quantifying module–trait associations, for the 57 libraries
+```{r, eval=F, echo=T}
+
+## (1) virus > module (virus tpm > module eigengene). for the 66 libraries
+# first Recalculate MEs with color labels 
+MEs0 = moduleEigengenes(for_modules_female, moduleColors_57)$eigengenes
+MEs_57 = orderMEs(MEs0)
+
+sizeGrWindow(10,6)
+# Will display correlations and their p-values
+textMatrix = paste(signif(moduleTraitCor_57, 2), "\n(",
+                   signif(moduleTraitPadjust_57, 1), ")", sep = "");
+dim(textMatrix) = dim(moduleTraitCor_57)
+par(mar = c(6, 8.5, 3, 3));
+# Display the correlation values within a heatmap plot
+heat57 <- labeledHeatmap(Matrix = moduleTraitCor_57,
+               xLabels = names(b_viruses_load_57),
+               yLabels = names(MEs_57),
+               ySymbols = names(MEs_57),
+               colorLabels = FALSE,
+               colors = blueWhiteRed(50),
+               textMatrix = textMatrix,
+               setStdMargins = FALSE,
+               cex.text = 0.7,
+               zlim = c(-1,1),
+               main = paste("Varroa Module-viruses relationships females only libraries"))
+heat57
+```
 
 ## (2) Module > gene (eigengene > gene tpm)
 ```{r eval=FALSE, include=FALSE}
@@ -328,7 +397,7 @@ grid.arrange(TransGreen, nrow = 1)
 ```
 
 ## (3) Virus > gene (virus tpm > gene tpm), which is GeneSignificance. 
-```{r}
+```{r eval=FALSE, include=FALSE}
 
 viruses_load <- read_rds("/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/viruses_load.RData")
 viruses <- viruses_load %>%

@@ -322,28 +322,84 @@ This allows us to quantify the similarity of all genes on the array to every mod
 
 ### WGCNA 3.b Gene relationship to trait and important modules: Gene Significance and Module Membership
 ```{r}
+# Define numbers of genes and samples
+nGenes = ncol(for_modules_female);
+nSamples = nrow(for_modules_female);
+# Recalculate MEs with color labels 
+MEs0 = moduleEigengenes(for_modules_female, moduleColors_57)$eigengenes
+MEs_57 = orderMEs(MEs0)
+
 # names (colors) of the modules
 modNames = substring(names(MEs_57), 3)
 virusNames = substring(names(b_viruses_load_57), 1)
 
 #make a table of the Module-membership ("MM") of each gene (which is its correlation coefficient, pearson)
 geneModuleMembership_57 = as.data.frame(cor(for_modules_female, MEs_57, use = "p"));
-MMPvalue = as.data.frame(corPvalueStudent(as.matrix(geneModuleMembership_57), nSamples));
+MMPvalue_57 = as.data.frame(corPvalueStudent(as.matrix(geneModuleMembership_57), nSamples));
+
+### Controlling the false discovery rate: Benjamini–Hochberg procedure ###
+# using p.adjust function, for all comparisons, 15 modules and 15 viruses (m=225). 
+
+# first make the p-value matrix into a dataframe
+MMPvalue_57_0 <- as.data.frame(MMPvalue_57)
+
+# then "gather" all the p-values, so they will apear in one column
+longer_Pvalue <- MMPvalue_57_0 %>% 
+    rownames_to_column("module") %>%
+    gather("virus", "pvalue", -module)
+
+# now calculate the p.adjust for each p-value 
+Padjust <- p.adjust(longer_Pvalue$pvalue, method = "fdr")
+
+# and add the column of adjusted pvalues
+Padjust <- add_column(longer_Pvalue, Padjust)
+
+# now spread it back
+MMPadjust_57 <- Padjust %>% 
+    dplyr::select(-pvalue) %>% 
+    group_by(virus) %>%
+    pivot_wider(names_from = virus, values_from = Padjust)
+MMPadjust_57 <- column_to_rownames(MMPadjust_57, "module")
 
 #change the name of the columns to start with "MM" then the module name
 names(geneModuleMembership_57) = paste("MM", modNames, sep="");
-names(MMPvalue) = paste("p.MM", modNames, sep="");
+names(MMPadjust_57) = paste("padj.MM", modNames, sep="");
 
+### now the same for Trait-significance ("GS"): 
 # make a table with the Trait-significance ("GS") for each gene (which is its correlation coefficient, pearson)
 geneTraitSignificance_57 = as.data.frame(cor(for_modules_female, b_viruses_load_57, use = "p"));
-GSPvalue = as.data.frame(corPvalueStudent(as.matrix(geneTraitSignificance_57), nSamples));
+GSPvalue_57 = as.data.frame(corPvalueStudent(as.matrix(geneTraitSignificance_57), nSamples));
+
+### Controlling the false discovery rate: Benjamini–Hochberg procedure ###
+# using p.adjust function, for all comparisons, 15 modules and 15 viruses (m=225). 
+
+# first make the p-value matrix into a dataframe
+GSPvalue_57_0 <- as.data.frame(GSPvalue_57)
+
+# then "gather" all the p-values, so they will apear in one column
+longer_Pvalue <- GSPvalue_57_0 %>% 
+    rownames_to_column("module") %>%
+    gather("virus", "pvalue", -module)
+
+# now calculate the p.adjust for each p-value 
+Padjust <- p.adjust(longer_Pvalue$pvalue, method = "fdr")
+
+# and add the column of adjusted pvalues
+Padjust <- add_column(longer_Pvalue, Padjust)
+
+# now spread it back
+GSPadjust_57 <- Padjust %>% 
+    dplyr::select(-pvalue) %>% 
+    group_by(virus) %>%
+    pivot_wider(names_from = virus, values_from = Padjust)
+GSPadjust_57 <- column_to_rownames(GSPadjust_57, "module")
 
 #rename the col names by adding the initial "GS." for genesignificance, and "p.GS." for p-value.
 names(geneTraitSignificance_57) = paste("GS.", names(b_viruses_load_57), sep="");
-names(GSPvalue) = paste("p.GS.", names(b_viruses_load_57), sep="");
+names(GSPadjust_57) = paste("pdj.GS.", names(b_viruses_load_57), sep="");
 
 #save data:
-save(geneTraitSignificance_57,geneModuleMembership_57, file = "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/geneTraitANDgeneMM_57.RData")
+save(geneTraitSignificance_57, GSPadjust_57, geneModuleMembership_57, MMPadjust_57, file = "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/geneTraitANDgeneMM_57.RData")
 ```
 
 Using the GS and MM measures, we can identify genes that have a high significance for total_load as well as high module membership in interesting modules. 
