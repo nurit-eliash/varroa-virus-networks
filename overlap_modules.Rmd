@@ -1,14 +1,22 @@
 ---
-title: "overlapping-modules-66-57"
-author: "Nurit"
+title: "overlap_modules"
+author: "Nurit Eliash"
 date: "2/4/2021"
-output: html_document
+output:
+  html_document:
+    theme: paper
+    toc: yes
+    toc_depth: 5
+    toc_float:
+      collapsed: yes
+      df_print: paged
 ---
-NOTE: first run "varroa virus networks.Rmd", then "varroa_modules".rmd then "varroa_modules_females.rmd"
+*NOTE* first run: 
+"varroa virus networks.Rmd"
+"varroa_modules".rmd  
+"varroa_modules_females.rmd"
 
 ```{r data storage, eval=FALSE, include=FALSE}
-#this analysis is on the 66 and the 57 libraries 
-
 #the working directory is in GitHb:
 setwd("/Users/nuriteliash/Documents/GitHub/varroa-virus-networks")
 
@@ -20,13 +28,13 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r libraries, include=FALSE}
 # load library
-library(dplyr)
-library(tidyverse)
-library(vegan)
-library(DESeq2)
-library(ggfortify)
-library(WGCNA)
-library(rmarkdown)
+library("dplyr")
+library("tidyverse")
+library("vegan")
+library("DESeq2")
+library("ggfortify")
+library("WGCNA")
+library("rmarkdown")
 library("knitr") # for the markdown
 library("kableExtra") # for creating a scrolling table
 library("ggplot2") # for plotting 
@@ -48,18 +56,16 @@ library("rgdal")
 library("grid")
 library("gridExtra")
 library("GeneOverlap")
-library(cluster)
-library(ggpmisc)
-library(DEGreport)
+library("cluster")
+library("ggpmisc")
+library("DEGreport")
 ```
 
-# Aim: to find genes appear in matching modules of the 66 and 57 libraries.
+> Aim: detecting genes that appear in matching modules of the two analyses (using 66 and 57 libraries).
 
 before we continue to explore the genes in Magenta module (in the 66 analysis), we need to be sure that they overlap those in the matching module in the female-only analysis (57 libraries).
 
 ```{r load data, include=FALSE}
-#NOTE: this code is assuming you already ran the two Rmds: "varroa_modules" and "varroa_modules_females"
-
 # load the module network, gene expression and viral load data of the 66 libraries analysis:
 names <- load("/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/Varroa_modules_networkConstruction-auto.RData")
 names
@@ -90,39 +96,44 @@ names <- load("/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Lo
 names
 ```
 
-### Finding matching modules (66 all libraries vs. 57 female libraries)
-```{r}
-#over lap the two modules tables, to check if the modules contain the same genes
+# Finding matching modules (66 all libraries vs. 57 female libraries)
+```{r, overlap modules, message=FALSE, warning=FALSE}
+# overlap the two modules tables, to check if the modules contain the same genes
 # to avoid confusion, i used the module colors for the 66 libs ("moduleColors" 15 modules + grey=genes with no module), and the modules numbers for the 57 libs ("moduleLabels_57" 14 modules + "zero" = genes with no module):
 compareModules <- overlapTable(
     moduleColors, moduleLabels_57, 
     na.rm = FALSE, ignore = NULL, 
     levels1 = NULL, levels2 = NULL)
 compareModules
-# using this function i was able to match modules from the analysis including all 66 libraries, and the analysis of females only (57 libraries). 
-# matching modules of the two analyses
-#                       66 all  == in 57 females:
-# (module number 0)  MM.grey == MM.grey (module number 0)
-# (module number 1)  MM.turquoise == MM.turquoise (module number 1)
-# (module number 2)  MM.blue == MM.turquoise (module number 1)
-# (module number 3)  MM.brown == MM.grey (module number 0)
-# (module number 4)  MM.yellow == MM.red (module number 6)
-# (module number 5)  MM.green == MM.blue (module number 2)
-# (module number 6)  MM.red == MM.black (module number 7)
-# (module number 7)  MM.black == MM.magenta (module number 9)
-# (module number 8)  MM.pink == MM.pink (module number 8)
-# (module number 9)  MM.magenta == MM.black (module number 7)
-# (module number 10) MM.purple == MM.salmon (module number 13)
-# (module number 11) MM.greenyellow == MM.greenyellow (module number 11)
-# (module number 12) MM.tan == MM.pink (module number 8)ma
-# (module number 13) MM.salmon == MM.purple (module number 10)
-# (module number 14) MM.cyan == MM.magenta (module number 9)
 ```
+using this function i was able to match modules from the analysis including all 66 libraries, and the analysis of females only (57 libraries). 
+matching modules of the two analyses
+
+66 all libraries                  | 57 female libraries:
+----------------------------------|---------------------------
+(module number 0)  MM.grey        | MM.grey (module number 0)
+ (module number 1)  MM.turquoise  | MM.turquoise (module number 1)
+ (module number 2)  MM.blue       | MM.turquoise (module number 1)
+ (module number 3)  MM.brown      | MM.grey (module number 0)
+ (module number 4)  MM.yellow     | MM.red (module number 6)
+ (module number 5)  MM.green      | MM.blue (module number 2)
+ (module number 6)  MM.red        | MM.black (module number 7)
+ (module number 7)  MM.black      | MM.magenta (module number 9)
+ (module number 8)  MM.pink       | MM.pink (module number 8)
+ (module number 9)  MM.magenta    | MM.black (module number 7)
+ (module number 10) MM.purple     | MM.salmon (module number 13)
+ (module number 11) MM.greenyellow| MM.greenyellow (module number 11)
+ (module number 12) MM.tan        | MM.pink (module number 8)ma
+ (module number 13) MM.salmon     | MM.purple (module number 10)
+ (module number 14) MM.cyan       | MM.magenta (module number 9)
+---
+
+> Intersting modules:
 
 according to "Module-Trait interaction", Magenta module looks interesting, as it have a negative correlation with DWVa, and positive correlation with VDV2.
 the matching module of Magenta (66libs) is black (57libs).
-So we gonna overlap the black module from 57, to magenta genes, from 66, using inner_join(),to get a table containing the overlapping genes, their geneTraitSignificance (for DWVa, ARV_2 and VDV2), geneModuleMembership, and Intramodular connectivity
-```{r}
+So we gonna overlap the black module from 57, to magenta genes, from 66 to get a table containing the overlapping genes, their geneTraitSignificance (for DWVa, ARV_2 and VDV2), geneModuleMembership, and Intramodular connectivity
+```{r, make a table of the overlapping genes in Magenta module, message=FALSE, warning=FALSE}
 geneInfoMagenta_66 = data.frame(
   module = moduleColors,
   geneTraitSignificance_66,
@@ -184,15 +195,22 @@ overlap_annot <- inner_join(overlap, annot_varroa, by = "genes") %>%
 # and filter out duplicated genes
 overlap_annot <-overlap_annot[!duplicated(overlap_annot[,'genes']),] 
 
+# how many genes overlap between Magenta module of the 66 libs, and the Black module of the 57 modules?
 nrow(overlap_annot)
 
 write_csv(x = as.data.frame(overlap_annot), "results/overlap_annot.csv")
 ```
+we have 40 overlapping genes between the two analyses, out of 86 Magenta module genes (66 libraries), and out of 328 genes in Black module (57 libraries). 
 
-## check the old-hubgenes - and specifically the silenced genes.
-1. does the overlaping genes share genes with the old-hubgenes?
-2. to which module the silenced genes, and specifically the silenced genes, belong to?
-```{r}
+***
+We also want to check the genes that were silenced, which were mistakenly chosen from the "old-hubgenes"
+
+# check the old-hubgenes - and specifically the silenced genes.
+1. do Magenta module overlap with the old-hubgenes?
+2. to which module the silenced genes belong to?
+
+## (1) do Magenta module overlap with the old-hubgenes?
+```{r, overlapping Magenta and old-hubgenes, message=FALSE, warning=FALSE}
 #load the former hub-genes:
 hub_old <- read_csv("/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/data/hub_annot_old.csv", col_names = TRUE, ) 
 hub_old$genes <- as.character(hub_old$genes)
@@ -204,7 +222,7 @@ f <- left_join(geneInfoMagenta_66, hub_old, by = "genes")
 sum(!is.na(f$virus.x))
 
 # only 3 genes of magenta module appear in the former hubgene. analysis
-# so to what module these 53-hubgenes belong to?
+# so to what module these 53 old-hubgenes belong to?
 
 #make a data.frame of all genes with modules:
 all.genes.66 <- data.frame(
@@ -219,8 +237,6 @@ all.genes.66 <- data.frame(
 
 left_join(hub_old, all.genes.66, by = "genes")
 
-# in the 66 libs, most of them belong to the purple module 
-
 all.genes.57 <- data.frame(
   module = moduleColors_57,
   geneTraitSignificance_57,
@@ -232,10 +248,16 @@ all.genes.57 <- data.frame(
   rownames_to_column("genes")
 
 left_join(hub_old, all.genes.57, by = "genes")
+```
+in the 66 libs, most old-hubgenes belong to the purple module 
+in the 57 libs, most old-hubgenes belong to the salmon module
 
-# in the 57 libs, most belong to the salmon module.
+"1. do Magenta module overlap with the old-hubgenes?" 
+> No: I made a mistake, and only 3 of the old-hubgenes belong to the actually interesting module, Magenta  
 
-# what about the silenced genes? to which module they belong to?
+what about the silenced genes? 
+## (2) to which module the silenced genes belong to?
+```{r, modules of silenced-genes, message=FALSE, warning=FALSE}
 # prepare a table describing each gene number, short-name and full annotation, of the silenced genes:
 genes <- as.factor(c("111250594", "111244103","111244832", "111248360", "111245345", "111248674", "111251059", "111245371", "111244631", "111252566", "111249664"))
 annot <- as.factor(c("Sarcalumenin", "glycerol-3-phosphate dehydrogenase", "Calmodulin", "Cuticle-protein8","Cuticle-protein-14", "Glutamate-receptor-3", "Glutamate-gated-chloride-channel-subunit-beta", "Organic-cation-transporter-protein", "Twitchin", "Annulin", "Defense-protein-Hdd11"))
@@ -245,18 +267,27 @@ silenced.genes <- data.frame(genes, ShortName, annot)
 # to what module the silenced genes belong to?
 silenced_overlap.66 <- left_join(silenced.genes, all.genes.66, by = "genes")
 silenced_overlap.57 <- left_join(silenced.genes, all.genes.57, by = "genes")
-# of the 11 genes, 8 belong to purple module, 2 to pink and 1 to green. 
-# all have negative interaction with DWVa. 
+silenced_overlap.66
+silenced_overlap.57
 ```
+* Non of the 11 silenced-genes belong to the Magenta module (8 belong to purple module, 2 to pink and 1 to green). 
+* all have negative interaction with DWVa. 
+ 
+ ***
 
-# pairwise correlations of Viral load, Module eigengenes and Gene expression:
-(1) virus > module (virus tpm > module eigengene) , which is actually “module-trait interaction”.
-(2) Module > gene (eigengene > gene tpm), 
-(3) Virus > gene (virus tpm > gene tpm), which is GeneSignificance. 
+but we have no choice now, as we already silenced these 11 genes. 
+so we need to know if the silencing effect on the viral load suit the prediction of the module-virus interaction.
+for that, we need to know (1) the prediction of the network analysis for the virus-module interaction, (2) the connectivity of each gene to their module, and (3) the specific virus-gene interaction.  
 
-## (1) virus > module (virus tpm > module eigengene). 
+# Pairwise correlations of Viral load, Module eigengenes and Gene expression:
+(1) virus - module (virus tpm - module eigengene) , which is actually “module-trait interaction”
+(2) Module - gene (eigengene - gene tpm)
+(3) Virus - gene (virus tpm - gene tpm), which is GeneSignificance 
+
+## (1) the prediction of the network analysis for the virus-module interaction
+virus - module (virus tpm - module eigengene). 
 ### Quantifying module–trait associations, for the 66 libraries
-```{r from the chunk of WGCNA 3.a Quantifying module–trait associations, eval=F, echo=T}
+```{r from the chunk of WGCNA 3.a Quantifying module–trait associations: 66, message=FALSE, warning=FALSE}
 # first Recalculate MEs with color labels 
 MEs0 = moduleEigengenes(for_modules, moduleColors)$eigengenes
 MEs = orderMEs(MEs0)
@@ -283,7 +314,7 @@ heat66
 ```
 
 ### Quantifying module–trait associations, for the 57 libraries
-```{r, eval=F, echo=T}
+```{r, from the chunk of WGCNA 3.a Quantifying module–trait associations: 57, message=FALSE, warning=FALSE}
 
 ## (1) virus > module (virus tpm > module eigengene). for the 66 libraries
 # first Recalculate MEs with color labels 
@@ -311,8 +342,9 @@ heat57 <- labeledHeatmap(Matrix = moduleTraitCor_57,
 heat57
 ```
 
-## (2) Module > gene (eigengene > gene tpm)
-```{r eval=FALSE, include=FALSE}
+## (2) the connectivity of each gene to their module
+Module - gene correlation (eigengene - gene tpm)
+```{r,  Module - gene correlation, emessage=FALSE, warning=FALSE}
 # make expression (tpm) of all silenced genes
 genes <- as.factor(c("111250594", "111244103","111244832", "111248360", "111245345", "111248674", "111251059", "111245371", "111244631", "111252566", "111249664"))
 
@@ -396,8 +428,9 @@ grid.arrange(SarPink, AnlPink, nrow = 1)
 grid.arrange(TransGreen, nrow = 1)
 ```
 
-## (3) Virus > gene (virus tpm > gene tpm), which is GeneSignificance. 
-```{r eval=FALSE, include=FALSE}
+## (3) the specific virus-gene interaction. 
+Virus > gene (virus tpm > gene tpm), which is GeneSignificance. 
+```{r, virus-gene correlation, emessage=FALSE, warning=FALSE}
 
 viruses_load <- read_rds("/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/viruses_load.RData")
 viruses <- viruses_load %>%
