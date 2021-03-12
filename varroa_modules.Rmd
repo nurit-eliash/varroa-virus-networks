@@ -86,7 +86,8 @@ just make the "for_modules" file and save it for subsequent analysis.
 final_gene_tpm_T<- transposeBigData(log10(final_gene_tpm + 0.000001))
 
 #plot PCA, detect outlier libraries
-autoplot(prcomp(final_gene_tpm_T), label = TRUE)
+autoplot(prcomp(final_gene_tpm_T), label = TRUE)+
+  ggtitle("66 libraries")
 
 #remove outlier libraries (by col)
 for_modules <- final_gene_tpm %>% transposeBigData() 
@@ -474,7 +475,7 @@ using the absolute MM value, and the signed GS
 ```{r eval=F, echo=T}
 sizeGrWindow(8,6)
 par(mfrow=c(2,2))
-module = "magenta"
+module = "pink"
 virus = "VDV2"
 column = match(module, modNames);
 column1 = match(virus, virusNames);
@@ -485,7 +486,7 @@ verboseScatterplot(geneModuleMembership_66[moduleGenes, column],
                    ylab = paste("Gene Trait significance for" ,virus, "viral load"),
                    main = paste(module, "Module membership vs. gene", virus, "significance\n 66 libraries; "),
                    cex.main = 1.2, cex.lab = 1.2, cex.axis = 1.2, col = module)
-module = "magenta"
+module = "green"
 virus = "DWVa"
 column = match(module, modNames);
 column1 = match(virus, virusNames);
@@ -496,7 +497,7 @@ verboseScatterplot(abs(geneModuleMembership_66[moduleGenes, column]),
                    ylab = paste("Gene Trait significance for" ,virus, "viral load"),
                    main = paste(module, "Module membership vs. gene", virus, "significance\n 66 libraries; "),
                    cex.main = 1.2, cex.lab = 1.2, cex.axis = 1.2, col = module)
-module = "magenta"
+module = "green"
 virus = "ARV_2"
 column = match(module, modNames);
 column1 = match(virus, virusNames);

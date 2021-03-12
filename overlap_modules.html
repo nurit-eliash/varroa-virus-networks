@@ -1550,9 +1550,10 @@ div.tocify {
 </div>
 
 
-<p>NOTE: first run “varroa virus networks.Rmd”, then “varroa_modules”.rmd then “varroa_modules_females.rmd”</p>
+<p><em>NOTE</em> first run: “varroa virus networks.Rmd” “varroa_modules”.rmd<br />
+“varroa_modules_females.rmd”</p>
 <blockquote>
-<p>Aim: detecting genes that appear in matching modules of the 66 and 57 libraries.</p>
+<p>Aim: detecting genes that appear in matching modules of the two analyses (using 66 and 57 libraries).</p>
 </blockquote>
 <p>before we continue to explore the genes in Magenta module (in the 66 analysis), we need to be sure that they overlap those in the matching module in the female-only analysis (57 libraries).</p>
 <div id="finding-matching-modules-66-all-libraries-vs.-57-female-libraries" class="section level1">
@@ -1727,7 +1728,7 @@ compareModules</code></pre>
 <blockquote>
 <p>Intersting modules:</p>
 </blockquote>
-<p>according to “Module-Trait interaction”, Magenta module looks interesting, as it have a negative correlation with DWVa, and positive correlation with VDV2. the matching module of Magenta (66libs) is black (57libs). So we gonna overlap the black module from 57, to magenta genes, from 66 to get a table containing the overlapping genes, their geneTraitSignificance (for DWVa, ARV_2 and VDV2), geneModuleMembership, and Intramodular connectivity</p>
+<p>according to “Module-Trait interaction”, Magenta module looks interesting, as it have a negative correlation with DWVa, and positive correlation with VDV2. the matching module of <em>Magenta (in the 66libs analysis)</em> is <em>black (in the 57libs analysis)</em>. So we gonna overlap the black module from 57, to magenta genes, from 66 to get a table containing the overlapping genes, their geneTraitSignificance (for DWVa, ARV_2 and VDV2), geneModuleMembership, and Intramodular connectivity</p>
 <pre class="r"><code>geneInfoMagenta_66 = data.frame(
   module = moduleColors,
   geneTraitSignificance_66,
@@ -1890,23 +1891,9 @@ nrow(overlap)  </code></pre>
 
 # add gene annotation:
 # load the annotation file:
-annot_varroa &lt;- read_csv(&quot;/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/data/annot_varroa.csv&quot;, col_names = TRUE, )</code></pre>
-<pre><code>## 
-## ── Column specification ────────────────────────────────────────────────────────
-## cols(
-##   Name = col_character(),
-##   Accession = col_character(),
-##   Start = col_double(),
-##   Stop = col_double(),
-##   Strand = col_character(),
-##   GeneID = col_double(),
-##   Locus = col_character(),
-##   `Locus tag` = col_character(),
-##   `Protein product` = col_character(),
-##   Length = col_double(),
-##   `Protein Name` = col_character()
-## )</code></pre>
-<pre class="r"><code># remove the &quot;LOC&quot; from the gene name
+annot_varroa &lt;- read_csv(&quot;/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/data/annot_varroa.csv&quot;, col_names = TRUE, )
+
+# remove the &quot;LOC&quot; from the gene name
 annot_varroa$Locus &lt;- str_replace(annot_varroa$Locus, &quot;LOC&quot;, &#39;&#39;)
 # and change the col name to &quot;genes&quot;, so it will the same as in the &quot;overlap&quot; table
 colnames(annot_varroa)[which(names(annot_varroa) == &quot;Locus&quot;)] &lt;- &quot;genes&quot;
@@ -1936,27 +1923,25 @@ overlap_annot &lt;- inner_join(overlap, annot_varroa, by = &quot;genes&quot;) %&
 # and filter out duplicated genes
 overlap_annot &lt;-overlap_annot[!duplicated(overlap_annot[,&#39;genes&#39;]),] 
 
+# how many genes overlap between Magenta module of the 66 libs, and the Black module of the 57 modules?
 nrow(overlap_annot)</code></pre>
 <pre><code>## [1] 40</code></pre>
 <pre class="r"><code>write_csv(x = as.data.frame(overlap_annot), &quot;results/overlap_annot.csv&quot;)</code></pre>
-<p>in addition, we want to check the genes that were silenced, that were mistakenly chosen from the “old-hubgenes”</p>
+<p>we have 40 overlapping genes between the two analyses, out of 86 Magenta module genes (66 libraries), and out of 328 genes in Black module (57 libraries).</p>
+<hr />
+<p>We also want to check the genes that were silenced, which were mistakenly chosen from the “old-hubgenes”</p>
 </div>
 <div id="check-the-old-hubgenes---and-specifically-the-silenced-genes." class="section level1">
 <h1>check the old-hubgenes - and specifically the silenced genes.</h1>
 <ol style="list-style-type: decimal">
-<li>does the overlaping genes share genes with the old-hubgenes?</li>
-<li>to which module the silenced genes, and specifically the silenced genes, belong to?</li>
+<li>do Magenta module overlap with the old-hubgenes?</li>
+<li>to which module the silenced genes belong to?</li>
 </ol>
+<div id="do-magenta-module-overlap-with-the-old-hubgenes" class="section level2">
+<h2>(1) do Magenta module overlap with the old-hubgenes?</h2>
 <pre class="r"><code>#load the former hub-genes:
-hub_old &lt;- read_csv(&quot;/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/data/hub_annot_old.csv&quot;, col_names = TRUE, ) </code></pre>
-<pre><code>## 
-## ── Column specification ────────────────────────────────────────────────────────
-## cols(
-##   genes = col_double(),
-##   virus.x = col_character(),
-##   `Protein Name` = col_character()
-## )</code></pre>
-<pre class="r"><code>hub_old$genes &lt;- as.character(hub_old$genes)
+hub_old &lt;- read_csv(&quot;/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/data/hub_annot_old.csv&quot;, col_names = TRUE, ) 
+hub_old$genes &lt;- as.character(hub_old$genes)
 
 # how many of the hub_old genes exist in the magenta module?
 #return all rows from x, and all columns from x and y. 
@@ -1964,8 +1949,8 @@ f &lt;- left_join(geneInfoMagenta_66, hub_old, by = &quot;genes&quot;)
 
 sum(!is.na(f$virus.x))</code></pre>
 <pre><code>## [1] 3</code></pre>
-<pre class="r"><code># only 3 genes of magenta module appear in the former hubgene. analysis
-# so to what module these 53-hubgenes belong to?
+<pre class="r"><code># only 3 genes of magenta module appear in the former hubgenes analysis
+# so to what module these 53 old-hubgenes belong to?
 
 #make a data.frame of all genes with modules:
 all.genes.66 &lt;- data.frame(
@@ -1995,9 +1980,7 @@ left_join(hub_old, all.genes.66, by = &quot;genes&quot;)</code></pre>
 ## # … with 43 more rows, and 7 more variables: pdj.GS.VDV2 &lt;dbl&gt;, GS.ARV_2 &lt;dbl&gt;,
 ## #   pdj.GS.ARV_2 &lt;dbl&gt;, MMpurple &lt;dbl&gt;, padj.MMpurple &lt;dbl&gt;, MMpink &lt;dbl&gt;,
 ## #   padj.MMpink &lt;dbl&gt;</code></pre>
-<pre class="r"><code># in the 66 libs, most of them belong to the purple module 
-
-all.genes.57 &lt;- data.frame(
+<pre class="r"><code>all.genes.57 &lt;- data.frame(
   module = moduleColors_57,
   geneTraitSignificance_57,
   GSPadjust_57,
@@ -2023,10 +2006,21 @@ left_join(hub_old, all.genes.57, by = &quot;genes&quot;)</code></pre>
 ## 10 1112… DWVa    solute carrie… salmon        9.64  -0.285      0.134   0.0203
 ## # … with 43 more rows, and 5 more variables: pdj.GS.VDV2 &lt;dbl&gt;, GS.ARV_2 &lt;dbl&gt;,
 ## #   pdj.GS.ARV_2 &lt;dbl&gt;, MMsalmon &lt;dbl&gt;, padj.MMsalmon &lt;dbl&gt;</code></pre>
-<pre class="r"><code># in the 57 libs, most belong to the salmon module.
-
-# what about the silenced genes? to which module they belong to?
-# prepare a table describing each gene number, short-name and full annotation, of the silenced genes:
+<blockquote>
+<p>Conclusions:</p>
+</blockquote>
+<p>only 3 genes of magenta module appear in the former hubgenes analysis in the 66 libs, most old-hubgenes belong to the purple module in the 57 libs, most old-hubgenes belong to the salmon module</p>
+<blockquote>
+<p>“1. do Magenta module overlap with the old-hubgenes?”</p>
+</blockquote>
+<blockquote>
+<p>No: I made a mistake, and only 3 of the old-hubgenes belong to the actually interesting module, Magenta</p>
+</blockquote>
+<p>what about the silenced genes?</p>
+</div>
+<div id="to-which-module-the-silenced-genes-belong-to" class="section level2">
+<h2>(2) to which module the silenced genes belong to?</h2>
+<pre class="r"><code># prepare a table describing each gene number, short-name and full annotation, of the silenced genes:
 genes &lt;- as.factor(c(&quot;111250594&quot;, &quot;111244103&quot;,&quot;111244832&quot;, &quot;111248360&quot;, &quot;111245345&quot;, &quot;111248674&quot;, &quot;111251059&quot;, &quot;111245371&quot;, &quot;111244631&quot;, &quot;111252566&quot;, &quot;111249664&quot;))
 annot &lt;- as.factor(c(&quot;Sarcalumenin&quot;, &quot;glycerol-3-phosphate dehydrogenase&quot;, &quot;Calmodulin&quot;, &quot;Cuticle-protein8&quot;,&quot;Cuticle-protein-14&quot;, &quot;Glutamate-receptor-3&quot;, &quot;Glutamate-gated-chloride-channel-subunit-beta&quot;, &quot;Organic-cation-transporter-protein&quot;, &quot;Twitchin&quot;, &quot;Annulin&quot;, &quot;Defense-protein-Hdd11&quot;))
 ShortName &lt;- as.factor(c(&quot;Sar&quot;, &quot;Gly&quot;,&quot;clmd&quot;, &quot;CuP8&quot;, &quot;CuP14&quot;, &quot;Glut&quot;, &quot;Chl&quot;, &quot;Trans&quot;, &quot;Twitch&quot;, &quot;Anl&quot;, &quot;HDD&quot;))
@@ -2109,23 +2103,22 @@ silenced_overlap.66</code></pre>
 ## 9    0.70085409 0.8232406  1.118366e-13
 ## 10   0.12306833 0.8115738  5.106445e-13
 ## 11   0.66339476 0.7807235  1.770799e-11</code></pre>
-<pre class="r"><code># of the 11 genes, 8 belong to purple module, 2 to pink and 1 to green. 
-# all have negative interaction with DWVa. </code></pre>
-<blockquote>
-<p>Aim: analyse the silenced genes</p>
-</blockquote>
+<ul>
+<li>None of the 11 silenced-genes belong to the Magenta module (8 belong to purple module, 2 to pink and 1 to green).</li>
+<li>all have negative interaction with DWVa.</li>
+</ul>
+<hr />
+<p>but we have no choice now, as we already silenced these 11 genes. so we need to know if the silencing effect on the viral load suit the prediction of the module-virus interaction. for that, we need to know:</p>
+<p><em>(1) the prediction of the network analysis for the virus-module interaction</em> (virus tpm - module eigengene), which is actually “module-trait interaction” <em>(2) the connectivity of each gene to their module</em> (eigengene - gene tpm) <em>(3) the specific virus-gene interaction</em> (virus tpm - gene tpm), which is GeneSignificance</p>
+</div>
 </div>
 <div id="pairwise-correlations-of-viral-load-module-eigengenes-and-gene-expression" class="section level1">
 <h1>Pairwise correlations of Viral load, Module eigengenes and Gene expression:</h1>
-<ol style="list-style-type: decimal">
-<li>virus &gt; module (virus tpm &gt; module eigengene) , which is actually “module-trait interaction”.</li>
-<li>Module &gt; gene (eigengene &gt; gene tpm),</li>
-<li>Virus &gt; gene (virus tpm &gt; gene tpm), which is GeneSignificance.</li>
-</ol>
-<div id="virus-module-virus-tpm-module-eigengene." class="section level2">
-<h2>(1) virus &gt; module (virus tpm &gt; module eigengene).</h2>
-<div id="quantifying-moduletrait-associations-for-the-66-libraries" class="section level3">
-<h3>Quantifying module–trait associations, for the 66 libraries</h3>
+<div id="the-prediction-of-the-network-analysis-for-the-virus-module-interaction" class="section level2">
+<h2>(1) the prediction of the network analysis for the virus-module interaction</h2>
+<p>virus - module (virus tpm - module eigengene).</p>
+<div id="a-quantifying-moduletrait-associations-for-the-66-libraries" class="section level3">
+<h3>(1a) Quantifying module–trait associations, for the 66 libraries</h3>
 <pre class="r"><code># first Recalculate MEs with color labels 
 MEs0 = moduleEigengenes(for_modules, moduleColors)$eigengenes
 MEs = orderMEs(MEs0)
@@ -2137,7 +2130,7 @@ textMatrix = paste(signif(moduleTraitCor_66, 2), &quot;\n(&quot;,
 dim(textMatrix) = dim(moduleTraitCor_66)
 par(mar = c(6, 8.5, 3, 3));
 # Display the correlation values within a heatmap plot
-heat66 &lt;- labeledHeatmap(Matrix = moduleTraitCor_66,
+labeledHeatmap(Matrix = moduleTraitCor_66,
                xLabels = names(b_viruses_load),
                yLabels = names(MEs),
                ySymbols = names(MEs),
@@ -2147,11 +2140,10 @@ heat66 &lt;- labeledHeatmap(Matrix = moduleTraitCor_66,
                setStdMargins = FALSE,
                cex.text = 0.7,
                zlim = c(-1,1),
-               main = paste(&quot;Varroa Module-viruses relationships, all 66 libraries&quot;))
-heat66</code></pre>
+               main = paste(&quot;Varroa Module-viruses relationships, all 66 libraries&quot;))</code></pre>
 </div>
-<div id="quantifying-moduletrait-associations-for-the-57-libraries" class="section level3">
-<h3>Quantifying module–trait associations, for the 57 libraries</h3>
+<div id="b-quantifying-moduletrait-associations-for-the-57-libraries" class="section level3">
+<h3>(1b) Quantifying module–trait associations, for the 57 libraries</h3>
 <pre class="r"><code>## (1) virus &gt; module (virus tpm &gt; module eigengene). for the 66 libraries
 # first Recalculate MEs with color labels 
 MEs0 = moduleEigengenes(for_modules_female, moduleColors_57)$eigengenes
@@ -2164,7 +2156,7 @@ textMatrix = paste(signif(moduleTraitCor_57, 2), &quot;\n(&quot;,
 dim(textMatrix) = dim(moduleTraitCor_57)
 par(mar = c(6, 8.5, 3, 3));
 # Display the correlation values within a heatmap plot
-heat57 &lt;- labeledHeatmap(Matrix = moduleTraitCor_57,
+labeledHeatmap(Matrix = moduleTraitCor_57,
                xLabels = names(b_viruses_load_57),
                yLabels = names(MEs_57),
                ySymbols = names(MEs_57),
@@ -2174,15 +2166,245 @@ heat57 &lt;- labeledHeatmap(Matrix = moduleTraitCor_57,
                setStdMargins = FALSE,
                cex.text = 0.7,
                zlim = c(-1,1),
-               main = paste(&quot;Varroa Module-viruses relationships females only libraries&quot;))
-heat57</code></pre>
+               main = paste(&quot;Varroa Module-viruses relationships females only libraries&quot;))</code></pre>
 </div>
 </div>
-<div id="module-gene-eigengene-gene-tpm" class="section level2">
-<h2>(2) Module &gt; gene (eigengene &gt; gene tpm)</h2>
+<div id="the-connectivity-of-each-gene-to-their-module" class="section level2">
+<h2>(2) the connectivity of each gene to their module</h2>
+<p>Module - gene correlation (eigengene - gene tpm)</p>
+<pre class="r"><code># make expression (tpm) of all silenced genes
+genes &lt;- as.factor(c(&quot;111250594&quot;, &quot;111244103&quot;,&quot;111244832&quot;, &quot;111248360&quot;, &quot;111245345&quot;, &quot;111248674&quot;, &quot;111251059&quot;, &quot;111245371&quot;, &quot;111244631&quot;, &quot;111252566&quot;, &quot;111249664&quot;))
+
+silenced_exp &lt;- for_modules %&gt;%
+  dplyr::select(genes)  %&gt;%
+  rownames_to_column(&quot;Library&quot;)</code></pre>
+<pre><code>## Note: Using an external vector in selections is ambiguous.
+## ℹ Use `all_of(genes)` instead of `genes` to silence this message.
+## ℹ See &lt;https://tidyselect.r-lib.org/reference/faq-external-vector.html&gt;.
+## This message is displayed once per session.</code></pre>
+<pre class="r"><code># make table of eigengens of the silenced genes
+# first Recalculate MEs with color labels 
+MEs0 = moduleEigengenes(for_modules, moduleColors)$eigengenes
+MEs = orderMEs(MEs0)
+
+Sil_MEs &lt;- as.character(c(&quot;MEpurple&quot;, &quot;MEgreen&quot;, &quot;MEpink&quot;))
+
+silenced_MEs &lt;- MEs %&gt;%
+  dplyr::select(all_of(Sil_MEs)) %&gt;%
+  rownames_to_column(&quot;Library&quot;)
+  
+# correlate gene expression (for each of the silenced genes) with eigengenes (of the gene to its module). 
+geneMEcor &lt;- as.matrix(cor(column_to_rownames(silenced_exp, &quot;Library&quot;), column_to_rownames(silenced_MEs, &quot;Library&quot;), &quot;p&quot;))
+
+plot &lt;- left_join(silenced_MEs, silenced_exp, by = &quot;Library&quot;)
+
+# plot the correlation of each gene and its MEs
+GlyPurple &lt;- ggplot(plot, aes(x=plot$&quot;111244103&quot;, y=MEpurple)) + 
+         geom_point() +
+  geom_cor(method = &quot;pearson&quot;, xpos = 1) +
+  xlab(&quot;Gly gene expression (tpm)&quot;) + 
+  ylab(&quot;Purple MEs)&quot;) +
+    ggtitle(&quot;Gly expression correlation\n to Purple ME&quot;) +
+      theme(
+        plot.title = element_text(color=&quot;black&quot;, size=14, face=&quot;bold&quot;),
+        axis.title.x = element_text(color=&quot;black&quot;, size=14),
+        axis.title.y = element_text(color=&quot;black&quot;, size=14))
+
+SarPink &lt;- ggplot(plot, aes(x=plot$&quot;111250594&quot;, y=MEpink)) + 
+         geom_point() +
+  geom_cor(method = &quot;pearson&quot;, xpos = 1) +
+  xlab(&quot;Sar gene expression (tpm)&quot;) + 
+  ylab(&quot;Pink MEs)&quot;) +
+    ggtitle(&quot;Sar expression correlation\n to Pink ME&quot;) +
+      theme(
+        plot.title = element_text(color=&quot;black&quot;, size=14, face=&quot;bold&quot;),
+        axis.title.x = element_text(color=&quot;black&quot;, size=14),
+        axis.title.y = element_text(color=&quot;black&quot;, size=14))
+
+clmdPurple &lt;- ggplot(plot, aes(x=plot$&quot;111244832&quot;, y=MEpurple)) + 
+         geom_point() +
+  geom_cor(method = &quot;pearson&quot;, xpos = 1) +
+  xlab(&quot;clmd gene expression (tpm)&quot;) + 
+  ylab(&quot;Purple MEs)&quot;) +
+    ggtitle(&quot;clmd expression correlation\n to Purple ME&quot;) +
+      theme(
+        plot.title = element_text(color=&quot;black&quot;, size=14, face=&quot;bold&quot;),
+        axis.title.x = element_text(color=&quot;black&quot;, size=14),
+        axis.title.y = element_text(color=&quot;black&quot;, size=14))
+
+CuP8Purple &lt;- ggplot(plot, aes(x=plot$&quot;111248360&quot;, y=MEpurple)) + 
+         geom_point() +
+  geom_cor(method = &quot;pearson&quot;, xpos = 1) +
+  xlab(&quot;CuP8 gene expression (tpm)&quot;) + 
+  ylab(&quot;Purple MEs)&quot;) +
+    ggtitle(&quot;CuP8 expression correlation\n to Purple ME&quot;) +
+      theme(
+        plot.title = element_text(color=&quot;black&quot;, size=14, face=&quot;bold&quot;),
+        axis.title.x = element_text(color=&quot;black&quot;, size=14),
+        axis.title.y = element_text(color=&quot;black&quot;, size=14))
+
+CuP14Purple &lt;- ggplot(plot, aes(x=plot$&quot;111245345&quot;, y=MEpurple)) + 
+         geom_point() +
+  geom_cor(method = &quot;pearson&quot;, xpos = 1) +
+  xlab(&quot;CuP14 gene expression (tpm)&quot;) + 
+  ylab(&quot;Purple MEs)&quot;) +
+    ggtitle(&quot;CuP14 expression correlation\n to Purple ME&quot;) +
+      theme(
+        plot.title = element_text(color=&quot;black&quot;, size=14, face=&quot;bold&quot;),
+        axis.title.x = element_text(color=&quot;black&quot;, size=14),
+        axis.title.y = element_text(color=&quot;black&quot;, size=14))
+
+GlutPurple &lt;- ggplot(plot, aes(x=plot$&quot;111248674&quot;, y=MEpurple)) + 
+         geom_point() +
+  geom_cor(method = &quot;pearson&quot;, xpos = 1) +
+  xlab(&quot;Glut gene expression (tpm)&quot;) + 
+  ylab(&quot;Purple MEs)&quot;) +
+    ggtitle(&quot;Glut expression correlation\n to Purple ME&quot;) +
+      theme(
+        plot.title = element_text(color=&quot;black&quot;, size=14, face=&quot;bold&quot;),
+        axis.title.x = element_text(color=&quot;black&quot;, size=14),
+        axis.title.y = element_text(color=&quot;black&quot;, size=14))
+
+ChlPurple &lt;- ggplot(plot, aes(x=plot$&quot;111251059&quot;, y=MEpurple)) + 
+         geom_point() +
+  geom_cor(method = &quot;pearson&quot;, xpos = 1) +
+  xlab(&quot;Chl gene expression (tpm)&quot;) + 
+  ylab(&quot;Purple MEs)&quot;) +
+    ggtitle(&quot;Chl expression correlation\n to Purple ME&quot;) +
+      theme(
+        plot.title = element_text(color=&quot;black&quot;, size=14, face=&quot;bold&quot;),
+        axis.title.x = element_text(color=&quot;black&quot;, size=14),
+        axis.title.y = element_text(color=&quot;black&quot;, size=14))
+
+
+TwitchPurple &lt;- ggplot(plot, aes(x=plot$&quot;111244631&quot;, y=MEpurple)) + 
+         geom_point() +
+  geom_cor(method = &quot;pearson&quot;, xpos = 1) +
+  xlab(&quot;Twitch gene expression (tpm)&quot;) + 
+  ylab(&quot;Purple MEs)&quot;) +
+    ggtitle(&quot;Twitch expression correlation\n to Purple ME&quot;) +
+      theme(
+        plot.title = element_text(color=&quot;black&quot;, size=14, face=&quot;bold&quot;),
+        axis.title.x = element_text(color=&quot;black&quot;, size=14),
+        axis.title.y = element_text(color=&quot;black&quot;, size=14))
+
+HDDPurple &lt;- ggplot(plot, aes(x=plot$&quot;111249664&quot;, y=MEpurple)) + 
+         geom_point() +
+  geom_cor(method = &quot;pearson&quot;, xpos = 1) +
+  xlab(&quot;HDD gene expression (tpm)&quot;) + 
+  ylab(&quot;Purple MEs)&quot;) +
+    ggtitle(&quot;HDD expression correlation\n to Purple ME&quot;) +
+      theme(
+        plot.title = element_text(color=&quot;black&quot;, size=14, face=&quot;bold&quot;),
+        axis.title.x = element_text(color=&quot;black&quot;, size=14),
+        axis.title.y = element_text(color=&quot;black&quot;, size=14))
+
+AnlPink &lt;- ggplot(plot, aes(x=plot$&quot;111252566&quot;, y=MEpink)) + 
+         geom_point() +
+  geom_cor(method = &quot;pearson&quot;, xpos = 1) +
+  xlab(&quot;Anl gene expression (tpm)&quot;) + 
+  ylab(&quot;pink MEs)&quot;) +
+    ggtitle(&quot;Anl expression correlation\n to pink ME&quot;) +
+      theme(
+        plot.title = element_text(color=&quot;black&quot;, size=14, face=&quot;bold&quot;),
+        axis.title.x = element_text(color=&quot;black&quot;, size=14),
+        axis.title.y = element_text(color=&quot;black&quot;, size=14))
+
+TransGreen &lt;- ggplot(plot, aes(x=plot$&quot;111245371&quot;, y=MEgreen)) + 
+         geom_point() +
+  geom_cor(method = &quot;pearson&quot;, xpos = 1) +
+  xlab(&quot;Trans gene expression (tpm)&quot;) + 
+  ylab(&quot;Green MEs)&quot;) +
+    ggtitle(&quot;Trans expression correlation\n to Green ME&quot;) +
+      theme(
+        plot.title = element_text(color=&quot;black&quot;, size=14, face=&quot;bold&quot;),
+        axis.title.x = element_text(color=&quot;black&quot;, size=14),
+        axis.title.y = element_text(color=&quot;black&quot;, size=14))
+
+
+# all purple-module genes:
+sizeGrWindow(20,10)
+grid.arrange(SarPink, clmdPurple, CuP8Purple, CuP14Purple, GlutPurple, ChlPurple,  nrow = 2)
+# all pink-module genes:
+grid.arrange(SarPink, AnlPink, nrow = 1)
+# all green-module genes:
+grid.arrange(TransGreen, nrow = 1)
+
+#maybe better to make in a heatmap?</code></pre>
 </div>
-<div id="virus-gene-virus-tpm-gene-tpm-which-is-genesignificance." class="section level2">
-<h2>(3) Virus &gt; gene (virus tpm &gt; gene tpm), which is GeneSignificance.</h2>
+<div id="the-specific-virus-gene-interaction." class="section level2">
+<h2>(3) the specific virus-gene interaction.</h2>
+<p>Virus &gt; gene (virus tpm &gt; gene tpm), which is GeneSignificance.</p>
+<pre class="r"><code># upload the viruses load
+viruses_load &lt;- read_rds(&quot;/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/viruses_load.RData&quot;)
+viruses &lt;- viruses_load %&gt;%
+  column_to_rownames(&quot;description&quot;) %&gt;%
+  transposeBigData() %&gt;%
+   dplyr::select(c(&quot;DWVa&quot;, &quot;VDV2&quot;, &quot;ARV_2&quot;)) %&gt;%
+   rownames_to_column(&quot;Library&quot;)
+#%&gt;% add_column(logDWVa = log(viruses$DWVa))
+
+# make a correlation data frame between the 3 viruses and the 11 genes:
+# put back the library as row_name
+silenced_exp_1 &lt;- silenced_exp %&gt;%
+  setnames(old = as.vector(genes), new = as.vector(ShortName)) %&gt;%
+  column_to_rownames(&quot;Library&quot;)
+
+viruses_1 &lt;- viruses %&gt;%
+  column_to_rownames(&quot;Library&quot;)
+
+# Define numbers of genes and samples
+nSamples = nrow(silenced_exp_1)
+
+geneVirusCor &lt;- cor(silenced_exp_1, viruses_1, &quot;p&quot;)
+geneVirusPvalue &lt;- corPvalueStudent(geneVirusCor, nSamples) %&gt;%
+  as.data.frame() 
+
+### Controlling the false discovery rate: Benjamini–Hochberg procedure ###
+# using p.adjust function, for all comparisons, 11 genes and 3 viruses (m=33). 
+
+#  &quot;gather&quot; all the p-values, so they will apear in one column
+longer_Pvalue &lt;- geneVirusPvalue %&gt;% 
+  rownames_to_column(&quot;genes&quot;) %&gt;%
+  gather(&quot;virus&quot;, &quot;pvalue&quot;, -genes)
+
+# now calculate the p.adjust for each p-value 
+Padjust &lt;- p.adjust(longer_Pvalue$pvalue, method = &quot;fdr&quot;)
+
+# and add the column of adjusted pvalues
+Padjust &lt;- add_column(longer_Pvalue, Padjust)
+
+# now spread it back
+geneVirusPadjust &lt;- Padjust %&gt;% 
+  dplyr::select(-pvalue) %&gt;% 
+  group_by(virus) %&gt;%
+  pivot_wider(names_from = virus, values_from = Padjust)
+geneVirusPadjust &lt;- column_to_rownames(geneVirusPadjust, &quot;genes&quot;)
+
+# before correlating, make the two dataframes into &quot;matrices&quot;
+geneVirusCor &lt;- as.matrix(geneVirusCor)
+geneVirusPadjust &lt;- as.matrix(geneVirusPadjust)
+
+# make a heat map of the correlation coefficients:
+
+sizeGrWindow(10,6)
+# Will display correlations and their p-values
+textMatrix = paste(signif(geneVirusCor, 2), &quot;\n(&quot;,
+                   signif(geneVirusPadjust, 1), &quot;)&quot;, sep = &quot;&quot;);
+dim(textMatrix) = dim(geneVirusCor)
+par(mar = c(6, 8.5, 3, 3));
+# Display the correlation values within a heatmap plot
+labeledHeatmap(Matrix = geneVirusCor,
+               xLabels = names(viruses_1),
+               yLabels = names(silenced_exp_1),
+               ySymbols = names(silenced_exp_1),
+               colorLabels = FALSE,
+               colors = blueWhiteRed(50),
+               textMatrix = textMatrix,
+               setStdMargins = FALSE,
+               cex.text = 0.7,
+               zlim = c(-1,1),
+               main = paste(&quot;Varroa genes-viruses relationships&quot;))</code></pre>
 <div id="check-correaltion-between-the-overlapping-genes-connectivity-of-the-two-analyses" class="section level3">
 <h3>check correaltion between the overlapping genes connectivity of the two analyses:</h3>
 <div id="the-intramodular-connectivity-of-the-genes-in-magenta-module-is-correlated-to-that-of-its-matching-module-black-in-the-57-libraries-but-not-to-the-purple-module." class="section level4">

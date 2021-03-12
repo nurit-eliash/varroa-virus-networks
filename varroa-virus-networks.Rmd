@@ -51,6 +51,10 @@ library("GeneOverlap")
 library("cluster")
 library("rmdformats")
 library("corrplot")
+library("viridis")
+library("hrbrthemes")
+library("ggthemes")
+library("RColorBrewer")
 
 knitr::opts_chunk$set(echo = TRUE)
 ```
@@ -75,7 +79,7 @@ The input data frame "df" contains 35,669 isoforms of 66 varroa SRA libraries, d
 consisted of a regularized log transformed matrix of 18,313 genes (as columns) and 29 libraries (as rows) of the venom gland which was filtered for low expressed transcripts (tpm > 0.05). Pm_7 was excluded due to low spike-in (see methods)
 
 mapping RNAseq reads to viruses and varroa genes
-```{r message=FALSE, warning=FALSE}
+```{r eval=FALSE, message=FALSE, warning=FALSE, include=FALSE}
 setwd("/Users/nuriteliash/Documents/GitHub/varroa-virus-networks")
 
 # read the viruses IDs:
@@ -125,7 +129,7 @@ x <- dplyr::filter(x, description != "VOV_1")
 # and bind the two data frames together 
 viruses_load <- rbind(x, VOV_1) 
 
-# reorder the viruses, so VOV_1 will apear in row number 3
+# reorder the viruses, so VOV_1 will appear in row number 3
 r <- 2
 insertRow <- function(x, VOV_1, r) {
   x[seq(r+1,nrow(x)+1),] <- x[seq(r,nrow(x)),]
@@ -140,6 +144,9 @@ saveRDS(viruses_load, file = "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-vi
  
 ### vizualize viruses distribution and abundance in (1)abundance plot; (2)PCA of viruses; (3)heat-map
 ```{r message=FALSE, warning=FALSE}
+df <- readRDS("/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/data/kallisto.rds")
+viruses_load <- readRDS(file = "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/viruses_load.RData")
+
 # (1) virus abundance plot
 joined_virus_lib <- viruses_load %>% gather("library", "tpm", -description)
 
@@ -155,22 +162,63 @@ biplot(virus_PCA)
 # (3) heat-map ov viruses loads (log tpm) per library
 # plot the viruses abundance in each library
 
-# make a df with tpm in logscale
-virus_abund <- viruses_load %>%  
+# re-order the viruses, based on viral load (from high to low):
+#total_virus_load <- viruses_load %>%
+ # gather("library", "tpm", -description) %>% 
+  #group_by(description) %>%
+  #summarise(total_load = sum(tpm)) %>%
+  #arrange(desc(total_load))
+# lock in factor level order of the total viral load
+#total_virus_load$description <- factor(total_virus_load$description, levels = total_virus_load$description)
+# make a vector of the new viruses order
+
+new_order <- c("DWVa", "VDV1/DWVb", "BMV", "VDV2","VOV_1","ARV_2" , "DWVc", "AmFV", "VDV3", "ABPV", "VTLV", "SV", "BQCV","VDV4", "IAPV", "KBV", "SBPV", "LSV","CBPV" ,"AFV", "ANV", "VPVL_46","VPVL_36")
+
+# re-order the viruses, based on viral load and viral abundance:
+viruses_load_arranged <- viruses_load  %>%
+  mutate(description =  factor(description, levels = new_order)) %>%
+  arrange(description) 
+  
+# lock in factor level order
+viruses_load_arranged$description <- factor(viruses_load_arranged$description, levels = viruses_load_arranged$description)
+
+# spread the df with tpm in logscale
+virus_abund <- viruses_load_arranged %>%  
     gather("library", "tpm", -description) 
 
 virus_abund[, 3] <- (virus_abund[,3]+ 0.000001)
 virus_abund[, 3] <- log10(virus_abund[,3]) 
 
 # now make a heat map
-virus_heatmap <- ggplot(data = virus_abund, mapping = aes(x = description,
+ggplot(data = virus_abund, mapping = aes(x = description,
                                                        y = library,
                                                        fill = tpm)) +
+  scale_fill_gradient2(low="#FFFFCC", mid = "#FF9933", high="#990000", space = "Lab") +
   geom_tile() +
-  xlab(label = "virus") + 
-  theme(axis.text.x = element_text(angle = 45)) 
+  theme_linedraw() +
+  xlab(label = "Viruses") +
+  ylab(label = "Varroa SRA libraries") +
+  labs(fill = "Viral load \n log(tpm)")
+  
 
-virus_heatmap
+# or use heatmap() function
+x <- viruses_load %>%
+  column_to_rownames("description") %>%
+  as.matrix()
+heatmap(x, Colv = NA, xlab="Libraries", ylab="Viruses", cexRow=1, labRow=paste(rownames(x)))
+
+
+#FFFFCC - cream color
+#scale= "row",
+#Rowv = NA, 
+# virus_heatmap + scale_color_brewer(palette = "BuPu")
+
+#scale_fill_manual(values=c("red", "blue", "green")) +
+#scale_fill_gradient(low="cream", high="blue", space = "Lab")
+ #theme(axis.text.x = element_text(angle = 30)) 
+ # scale_color_brewer(palette = "BuPu") 
+#coul <- colorRampPalette(brewer.pal(8, "Blues"))(25)
+
 ```
 
 ## virus Correlation matrix: 66 libs

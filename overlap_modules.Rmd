@@ -28,6 +28,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r libraries, include=FALSE}
 # load library
+library("data.table")
 library("dplyr")
 library("tidyverse")
 library("vegan")
@@ -131,7 +132,7 @@ matching modules of the two analyses
 > Intersting modules:
 
 according to "Module-Trait interaction", Magenta module looks interesting, as it have a negative correlation with DWVa, and positive correlation with VDV2.
-the matching module of Magenta (66libs) is black (57libs).
+the matching module of *Magenta (in the 66libs analysis)* is *black (in the 57libs analysis)*.
 So we gonna overlap the black module from 57, to magenta genes, from 66 to get a table containing the overlapping genes, their geneTraitSignificance (for DWVa, ARV_2 and VDV2), geneModuleMembership, and Intramodular connectivity
 ```{r, make a table of the overlapping genes in Magenta module, message=FALSE, warning=FALSE}
 geneInfoMagenta_66 = data.frame(
@@ -200,6 +201,7 @@ nrow(overlap_annot)
 
 write_csv(x = as.data.frame(overlap_annot), "results/overlap_annot.csv")
 ```
+
 we have 40 overlapping genes between the two analyses, out of 86 Magenta module genes (66 libraries), and out of 328 genes in Black module (57 libraries). 
 
 ***
@@ -221,7 +223,7 @@ f <- left_join(geneInfoMagenta_66, hub_old, by = "genes")
 
 sum(!is.na(f$virus.x))
 
-# only 3 genes of magenta module appear in the former hubgene. analysis
+# only 3 genes of magenta module appear in the former hubgenes analysis
 # so to what module these 53 old-hubgenes belong to?
 
 #make a data.frame of all genes with modules:
@@ -232,7 +234,7 @@ all.genes.66 <- data.frame(
   geneModuleMembership_66,
   MMPadjust_66,
   IntraModCon = Alldegrees1_66$kWithin) %>%
-  dplyr::select(c(module, IntraModCon, GS.DWVa, pdj.GS.DWVa, GS.VDV2, pdj.GS.VDV2, GS.ARV_2, pdj.GS.ARV_2, MMpurple, padj.MMpurple, MMpink, padj.MMpink)) %>%
+  dplyr::select(c(module, IntraModCon, GS.DWVa, pdj.GS.DWVa, GS.VDV2, pdj.GS.VDV2, GS.ARV_2, pdj.GS.ARV_2, MMpurple, padj.MMpurple, MMpink, padj.MMpink, MMgreen, padj.MMgreen)) %>%
   rownames_to_column("genes")
 
 left_join(hub_old, all.genes.66, by = "genes")
@@ -249,13 +251,18 @@ all.genes.57 <- data.frame(
 
 left_join(hub_old, all.genes.57, by = "genes")
 ```
+> Conclusions:
+
+only 3 genes of magenta module appear in the former hubgenes analysis
 in the 66 libs, most old-hubgenes belong to the purple module 
 in the 57 libs, most old-hubgenes belong to the salmon module
 
-"1. do Magenta module overlap with the old-hubgenes?" 
+> "1. do Magenta module overlap with the old-hubgenes?" 
+
 > No: I made a mistake, and only 3 of the old-hubgenes belong to the actually interesting module, Magenta  
 
 what about the silenced genes? 
+
 ## (2) to which module the silenced genes belong to?
 ```{r, modules of silenced-genes, message=FALSE, warning=FALSE}
 # prepare a table describing each gene number, short-name and full annotation, of the silenced genes:
@@ -269,25 +276,29 @@ silenced_overlap.66 <- left_join(silenced.genes, all.genes.66, by = "genes")
 silenced_overlap.57 <- left_join(silenced.genes, all.genes.57, by = "genes")
 silenced_overlap.66
 silenced_overlap.57
+
+write_csv(x = as.data.frame(silenced_overlap.66), "results/silenced_genes_info.csv")
 ```
-* Non of the 11 silenced-genes belong to the Magenta module (8 belong to purple module, 2 to pink and 1 to green). 
+* None of the 11 silenced-genes belong to the Magenta module (8 belong to purple module, 2 to pink and 1 to green). 
 * all have negative interaction with DWVa. 
  
  ***
 
 but we have no choice now, as we already silenced these 11 genes. 
 so we need to know if the silencing effect on the viral load suit the prediction of the module-virus interaction.
-for that, we need to know (1) the prediction of the network analysis for the virus-module interaction, (2) the connectivity of each gene to their module, and (3) the specific virus-gene interaction.  
+for that, we need to know: 
+
+*(1) the prediction of the network analysis for the virus-module interaction* (virus tpm - module eigengene), which is actually “module-trait interaction”
+*(2) the connectivity of each gene to their module* (eigengene - gene tpm)
+*(3) the specific virus-gene interaction* (virus tpm - gene tpm), which is GeneSignificance 
 
 # Pairwise correlations of Viral load, Module eigengenes and Gene expression:
-(1) virus - module (virus tpm - module eigengene) , which is actually “module-trait interaction”
-(2) Module - gene (eigengene - gene tpm)
-(3) Virus - gene (virus tpm - gene tpm), which is GeneSignificance 
 
 ## (1) the prediction of the network analysis for the virus-module interaction
 virus - module (virus tpm - module eigengene). 
-### Quantifying module–trait associations, for the 66 libraries
-```{r from the chunk of WGCNA 3.a Quantifying module–trait associations: 66, message=FALSE, warning=FALSE}
+
+### (1a) Quantifying module–trait associations, for the 66 libraries
+```{r, from the chunk of WGCNA 3.a Quantifying module–trait associations: 66, message=FALSE, warning=FALSE}
 # first Recalculate MEs with color labels 
 MEs0 = moduleEigengenes(for_modules, moduleColors)$eigengenes
 MEs = orderMEs(MEs0)
@@ -299,7 +310,7 @@ textMatrix = paste(signif(moduleTraitCor_66, 2), "\n(",
 dim(textMatrix) = dim(moduleTraitCor_66)
 par(mar = c(6, 8.5, 3, 3));
 # Display the correlation values within a heatmap plot
-heat66 <- labeledHeatmap(Matrix = moduleTraitCor_66,
+labeledHeatmap(Matrix = moduleTraitCor_66,
                xLabels = names(b_viruses_load),
                yLabels = names(MEs),
                ySymbols = names(MEs),
@@ -310,10 +321,9 @@ heat66 <- labeledHeatmap(Matrix = moduleTraitCor_66,
                cex.text = 0.7,
                zlim = c(-1,1),
                main = paste("Varroa Module-viruses relationships, all 66 libraries"))
-heat66
 ```
 
-### Quantifying module–trait associations, for the 57 libraries
+### (1b) Quantifying module–trait associations, for the 57 libraries
 ```{r, from the chunk of WGCNA 3.a Quantifying module–trait associations: 57, message=FALSE, warning=FALSE}
 
 ## (1) virus > module (virus tpm > module eigengene). for the 66 libraries
@@ -328,7 +338,7 @@ textMatrix = paste(signif(moduleTraitCor_57, 2), "\n(",
 dim(textMatrix) = dim(moduleTraitCor_57)
 par(mar = c(6, 8.5, 3, 3));
 # Display the correlation values within a heatmap plot
-heat57 <- labeledHeatmap(Matrix = moduleTraitCor_57,
+labeledHeatmap(Matrix = moduleTraitCor_57,
                xLabels = names(b_viruses_load_57),
                yLabels = names(MEs_57),
                ySymbols = names(MEs_57),
@@ -339,7 +349,6 @@ heat57 <- labeledHeatmap(Matrix = moduleTraitCor_57,
                cex.text = 0.7,
                zlim = c(-1,1),
                main = paste("Varroa Module-viruses relationships females only libraries"))
-heat57
 ```
 
 ## (2) the connectivity of each gene to their module
@@ -360,7 +369,7 @@ MEs = orderMEs(MEs0)
 Sil_MEs <- as.character(c("MEpurple", "MEgreen", "MEpink"))
 
 silenced_MEs <- MEs %>%
-  dplyr::select(Sil_MEs) %>%
+  dplyr::select(all_of(Sil_MEs)) %>%
   rownames_to_column("Library")
   
 # correlate gene expression (for each of the silenced genes) with eigengenes (of the gene to its module). 
@@ -368,20 +377,143 @@ geneMEcor <- as.matrix(cor(column_to_rownames(silenced_exp, "Library"), column_t
 
 plot <- left_join(silenced_MEs, silenced_exp, by = "Library")
 
-SarPink <- ggplot(plot, aes(x=plot$"111250594", y=MEpink)) + 
-         geom_point() +
-        ggtitle("Sar gene expression-Pink ME correlation")
-
+# plot the correlation of each gene and its MEs
 GlyPurple <- ggplot(plot, aes(x=plot$"111244103", y=MEpurple)) + 
          geom_point() +
   geom_cor(method = "pearson", xpos = 1) +
   xlab("Gly gene expression (tpm)") + 
   ylab("Purple MEs)") +
-    ggtitle("Sar expression correlation to Purple ME") +
+    ggtitle("Gly expression correlation\n to Purple ME") +
       theme(
         plot.title = element_text(color="black", size=14, face="bold"),
         axis.title.x = element_text(color="black", size=14),
         axis.title.y = element_text(color="black", size=14))
+
+SarPink <- ggplot(plot, aes(x=plot$"111250594", y=MEpink)) + 
+         geom_point() +
+  geom_cor(method = "pearson", xpos = 1) +
+  xlab("Sar gene expression (tpm)") + 
+  ylab("Pink MEs)") +
+    ggtitle("Sar expression correlation\n to Pink ME") +
+      theme(
+        plot.title = element_text(color="black", size=14, face="bold"),
+        axis.title.x = element_text(color="black", size=14),
+        axis.title.y = element_text(color="black", size=14))
+
+clmdPurple <- ggplot(plot, aes(x=plot$"111244832", y=MEpurple)) + 
+         geom_point() +
+  geom_cor(method = "pearson", xpos = 1) +
+  xlab("clmd gene expression (tpm)") + 
+  ylab("Purple MEs)") +
+    ggtitle("clmd expression correlation\n to Purple ME") +
+      theme(
+        plot.title = element_text(color="black", size=14, face="bold"),
+        axis.title.x = element_text(color="black", size=14),
+        axis.title.y = element_text(color="black", size=14))
+
+CuP8Purple <- ggplot(plot, aes(x=plot$"111248360", y=MEpurple)) + 
+         geom_point() +
+  geom_cor(method = "pearson", xpos = 1) +
+  xlab("CuP8 gene expression (tpm)") + 
+  ylab("Purple MEs)") +
+    ggtitle("CuP8 expression correlation\n to Purple ME") +
+      theme(
+        plot.title = element_text(color="black", size=14, face="bold"),
+        axis.title.x = element_text(color="black", size=14),
+        axis.title.y = element_text(color="black", size=14))
+
+CuP14Purple <- ggplot(plot, aes(x=plot$"111245345", y=MEpurple)) + 
+         geom_point() +
+  geom_cor(method = "pearson", xpos = 1) +
+  xlab("CuP14 gene expression (tpm)") + 
+  ylab("Purple MEs)") +
+    ggtitle("CuP14 expression correlation\n to Purple ME") +
+      theme(
+        plot.title = element_text(color="black", size=14, face="bold"),
+        axis.title.x = element_text(color="black", size=14),
+        axis.title.y = element_text(color="black", size=14))
+
+GlutPurple <- ggplot(plot, aes(x=plot$"111248674", y=MEpurple)) + 
+         geom_point() +
+  geom_cor(method = "pearson", xpos = 1) +
+  xlab("Glut gene expression (tpm)") + 
+  ylab("Purple MEs)") +
+    ggtitle("Glut expression correlation\n to Purple ME") +
+      theme(
+        plot.title = element_text(color="black", size=14, face="bold"),
+        axis.title.x = element_text(color="black", size=14),
+        axis.title.y = element_text(color="black", size=14))
+
+ChlPurple <- ggplot(plot, aes(x=plot$"111251059", y=MEpurple)) + 
+         geom_point() +
+  geom_cor(method = "pearson", xpos = 1) +
+  xlab("Chl gene expression (tpm)") + 
+  ylab("Purple MEs)") +
+    ggtitle("Chl expression correlation\n to Purple ME") +
+      theme(
+        plot.title = element_text(color="black", size=14, face="bold"),
+        axis.title.x = element_text(color="black", size=14),
+        axis.title.y = element_text(color="black", size=14))
+
+
+TwitchPurple <- ggplot(plot, aes(x=plot$"111244631", y=MEpurple)) + 
+         geom_point() +
+  geom_cor(method = "pearson", xpos = 1) +
+  xlab("Twitch gene expression (tpm)") + 
+  ylab("Purple MEs)") +
+    ggtitle("Twitch expression correlation\n to Purple ME") +
+      theme(
+        plot.title = element_text(color="black", size=14, face="bold"),
+        axis.title.x = element_text(color="black", size=14),
+        axis.title.y = element_text(color="black", size=14))
+
+HDDPurple <- ggplot(plot, aes(x=plot$"111249664", y=MEpurple)) + 
+         geom_point() +
+  geom_cor(method = "pearson", xpos = 1) +
+  xlab("HDD gene expression (tpm)") + 
+  ylab("Purple MEs)") +
+    ggtitle("HDD expression correlation\n to Purple ME") +
+      theme(
+        plot.title = element_text(color="black", size=14, face="bold"),
+        axis.title.x = element_text(color="black", size=14),
+        axis.title.y = element_text(color="black", size=14))
+
+AnlPink <- ggplot(plot, aes(x=plot$"111252566", y=MEpink)) + 
+         geom_point() +
+  geom_cor(method = "pearson", xpos = 1) +
+  xlab("Anl gene expression (tpm)") + 
+  ylab("pink MEs)") +
+    ggtitle("Anl expression correlation\n to pink ME") +
+      theme(
+        plot.title = element_text(color="black", size=14, face="bold"),
+        axis.title.x = element_text(color="black", size=14),
+        axis.title.y = element_text(color="black", size=14))
+
+TransGreen <- ggplot(plot, aes(x=plot$"111245371", y=MEgreen)) + 
+         geom_point() +
+  geom_cor(method = "pearson", xpos = 1) +
+  xlab("Trans gene expression (tpm)") + 
+  ylab("Green MEs)") +
+    ggtitle("Trans expression correlation\n to Green ME") +
+      theme(
+        plot.title = element_text(color="black", size=14, face="bold"),
+        axis.title.x = element_text(color="black", size=14),
+        axis.title.y = element_text(color="black", size=14))
+
+
+# all purple-module genes:
+sizeGrWindow(20,10)
+grid.arrange(GlyPurple, clmdPurple, CuP8Purple, CuP14Purple, GlutPurple, ChlPurple,  TwitchPurple, HDDPurple, nrow = 2)
+# all pink-module genes:
+grid.arrange(SarPink, AnlPink, nrow = 1)
+# all green-module genes:
+grid.arrange(TransGreen, nrow = 1)
+
+# maybe better to make in a heatmap?
+```
+
+```{r eval=FALSE, include=FALSE}
+#i tried to make the former chunk  in a loop:
 ------
 genesNumb = as.character(silenced.genes$genes)
 genesName = as.character(silenced.genes$ShortName)
@@ -399,39 +531,12 @@ for (i in c(1:length(genesNumb)))
                      xlab = "Connectivity", ylab = "Gene Significance", abline = TRUE)
 }
 i = 1
--------
-
-clmdPurple <- ggplot(plot, aes(x=plot$"111244832", y=MEpurple)) + 
-         geom_point()
-CuP8Purple <- ggplot(plot, aes(x=plot$"111248360", y=MEpurple)) + 
-         geom_point()
-CuP14Purple <- ggplot(plot, aes(x=plot$"111245345", y=MEpurple)) + 
-         geom_point()
-GlutPurple <- ggplot(plot, aes(x=plot$"111248674", y=MEpurple)) + 
-         geom_point()
-ChlPurple <- ggplot(plot, aes(x=plot$"111251059", y=MEpurple)) + 
-         geom_point()
-TransGreen <- ggplot(plot, aes(x=plot$"111245371", y=MEgreen)) + 
-         geom_point()
-TwitchPurple <- ggplot(plot, aes(x=plot$"111244631", y=MEpurple)) + 
-         geom_point()
-AnlPink <- ggplot(plot, aes(x=plot$"111252566", y=MEpink)) + 
-         geom_point()
-HDDPurple <- ggplot(plot, aes(x=plot$"111249664", y=MEpurple)) + 
-         geom_point()
-
-# all purple-module genes:
-grid.arrange(SarPink, clmdPurple, CuP8Purple, CuP14Purple, GlutPurple, ChlPurple,  nrow = 2)
-# all pink-module genes:
-grid.arrange(SarPink, AnlPink, nrow = 1)
-# all green-module genes:
-grid.arrange(TransGreen, nrow = 1)
 ```
 
 ## (3) the specific virus-gene interaction. 
 Virus > gene (virus tpm > gene tpm), which is GeneSignificance. 
 ```{r, virus-gene correlation, emessage=FALSE, warning=FALSE}
-
+# upload the viruses load
 viruses_load <- read_rds("/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/viruses_load.RData")
 viruses <- viruses_load %>%
   column_to_rownames("description") %>%
@@ -440,6 +545,70 @@ viruses <- viruses_load %>%
    rownames_to_column("Library")
 #%>% add_column(logDWVa = log(viruses$DWVa))
 
+# make a correlation data frame between the 3 viruses and the 11 genes:
+# put back the library as row_name
+silenced_exp_1 <- silenced_exp %>%
+  setnames(old = as.vector(genes), new = as.vector(ShortName)) %>%
+  column_to_rownames("Library")
+
+viruses_1 <- viruses %>%
+  column_to_rownames("Library")
+
+# Define numbers of genes and samples
+nSamples = nrow(silenced_exp_1)
+
+geneVirusCor <- cor(silenced_exp_1, viruses_1, "p")
+geneVirusPvalue <- corPvalueStudent(geneVirusCor, nSamples) %>%
+  as.data.frame() 
+
+### Controlling the false discovery rate: Benjamini–Hochberg procedure ###
+# using p.adjust function, for all comparisons, 11 genes and 3 viruses (m=33). 
+
+#  "gather" all the p-values, so they will apear in one column
+longer_Pvalue <- geneVirusPvalue %>% 
+  rownames_to_column("genes") %>%
+  gather("virus", "pvalue", -genes)
+
+# now calculate the p.adjust for each p-value 
+Padjust <- p.adjust(longer_Pvalue$pvalue, method = "fdr")
+
+# and add the column of adjusted pvalues
+Padjust <- add_column(longer_Pvalue, Padjust)
+
+# now spread it back
+geneVirusPadjust <- Padjust %>% 
+  dplyr::select(-pvalue) %>% 
+  group_by(virus) %>%
+  pivot_wider(names_from = virus, values_from = Padjust)
+geneVirusPadjust <- column_to_rownames(geneVirusPadjust, "genes")
+
+# before correlating, make the two dataframes into "matrices"
+geneVirusCor <- as.matrix(geneVirusCor)
+geneVirusPadjust <- as.matrix(geneVirusPadjust)
+
+# make a heat map of the correlation coefficients:
+
+sizeGrWindow(10,6)
+# Will display correlations and their p-values
+textMatrix = paste(signif(geneVirusCor, 2), "\n(",
+                   signif(geneVirusPadjust, 1), ")", sep = "");
+dim(textMatrix) = dim(geneVirusCor)
+par(mar = c(6, 8.5, 3, 3));
+# Display the correlation values within a heatmap plot
+labeledHeatmap(Matrix = geneVirusCor,
+               xLabels = names(viruses_1),
+               yLabels = names(silenced_exp_1),
+               ySymbols = names(silenced_exp_1),
+               colorLabels = FALSE,
+               colors = blueWhiteRed(50),
+               textMatrix = textMatrix,
+               setStdMargins = FALSE,
+               cex.text = 0.7,
+               zlim = c(-1,1),
+               main = paste("Varroa genes-viruses relationships"))
+```
+
+```{r, another option - plot the correlation of each gene-virus, eval=FALSE, include=FALSE}
 # correlate gene expression (for each of the silenced genes) with viral load (of the three viruses)
 plot1 <- left_join(viruses, silenced_exp, by = "Library") %>% 
   column_to_rownames("Library")
@@ -463,39 +632,6 @@ theme(
 plot.title = element_text(color="black", size=14, face="bold"),
 axis.title.x = element_text(color="black", size=14),
 axis.title.y = element_text(color="black", size=14))
-
-GlyDWVa <- ggplot(plot1, aes(x=`111244103`, y=DWVa)) + 
-         geom_point() +
-  geom_cor(method = "pearson", xpos = 1) +
-  xlab("Gly gene expression (tpm)") + ylab("DWVa viral load (log(tpm))") +
-    ggtitle("Gly expression correlation to DWVa viral load") +
-theme(
-plot.title = element_text(color="black", size=14, face="bold"),
-axis.title.x = element_text(color="black", size=14),
-axis.title.y = element_text(color="black", size=14))
-
-
-
-
-
----------
-#maybe make a heat map of the correlation coefficiets?
-# put back the ilbrary as rowname
- silenced_exp_1 <- silenced_exp %>%
-  column_to_rownames("Library")
-
-  geneVirusCor <- as.data.frame(cor(silenced_exp, viruses, "p")) %>%
-  rownames_to_column("genes") 
-ggplot(data = geneVirusCor, mapping = aes(x = genes,
-                                                       y = library,
-                                                       fill = tpm)) +
-  geom_tile() +
-  xlab(label = "virus") + 
-  theme(axis.text.x = element_text(angle = 45)) 
-
-
-
-
 ```
 
 

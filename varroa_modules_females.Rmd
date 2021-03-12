@@ -65,6 +65,11 @@ for_modules_female <- final_gene_tpm %>%
   dplyr::select(-c("SRR5760848", "SRR5760838", "SRR5760828", "SRR5760818", "SRR5377265" ,"SRR5377270" ,"SRR5377269" ,"SRR5377263" ,"SRR5377266")) %>%
   transposeBigData()
 
+#plot PCA, detect outlier libraries
+autoplot(prcomp(for_modules_female), label = TRUE)+
+  ggtitle("57 libraries")
+
+
 saveRDS(for_modules_female, file = "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/for_modules_female.rds")
 ```
 
@@ -134,8 +139,8 @@ we therefore set the mergeCutHeight = 0.22, and the power = 10.
 #=====================================================================================
 
 net = blockwiseModules(for_modules_female, power = 10,
-                       TOMType = "unsigned", minModuleSize = 30,
-                       reassignThreshold = 0, mergeCutHeight = 0.22,
+                       TOMType = "signed", minModuleSize = 30,
+                       reassignThreshold = 0, mergeCutHeight = 0.,
                        numericLabels = TRUE, pamRespectsDendro = FALSE,
                        saveTOMs = TRUE,
                        saveTOMFileBase = "Varroa_modulesTOM", 
