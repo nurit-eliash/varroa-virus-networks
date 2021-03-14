@@ -198,7 +198,11 @@ ggplot(data = virus_abund, mapping = aes(x = description,
   theme_linedraw() +
   xlab(label = "Viruses") +
   ylab(label = "Varroa SRA libraries") +
-  labs(fill = "Viral load \n log(tpm)")
+  labs(fill = "Viral load \n log(tpm)")  + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))  + 
+  theme(axis.ticks = element_blank())
+
+
   
 
 # or use heatmap() function
