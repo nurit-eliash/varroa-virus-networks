@@ -346,6 +346,9 @@ mantel.test(corModulTrait_66, virusAbundCor_66, graph = TRUE,
 
 # (2) Mantel test using "vegan" library:
 mantel(corModulTrait_66, virusAbundCor_66, method="pearson", permutations=1000)
+
+#plot the correlation
+verboseScatterplot(x = corModulTrait_66, y = virusAbundCor_66, main = "Viral abundance predicts varroa-virus interaction", xlab = "Varroa-virus interaction", ylab = "Virus abundance")
 ```
 
 ### WGCNA 3.a Quantifying module–trait associations
@@ -362,12 +365,15 @@ labeledHeatmap(Matrix = moduleTraitCor_66,
                yLabels = names(MEs),
                ySymbols = names(MEs),
                colorLabels = FALSE,
-               colors = blueWhiteRed(50),
+               colors = hcl.colors(n = 50, palette = "RdYlBu", alpha = NULL, rev = FALSE, fixup = TRUE),
                textMatrix = textMatrix,
                setStdMargins = FALSE,
                cex.text = 0.7,
                zlim = c(-1,1),
                main = paste("Varroa Module-viruses relationships"))
+
+#colors = blueWhiteRed(50),
+#colors = hcl.colors(n = 80, palette = "viridis", alpha = NULL, rev = FALSE, fixup = TRUE),
 ```
 
 #### hirarchial clustering of the viruses, based to their correlation to the varroa modules

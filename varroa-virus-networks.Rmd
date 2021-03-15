@@ -172,7 +172,7 @@ biplot(virus_PCA)
 #total_virus_load$description <- factor(total_virus_load$description, levels = total_virus_load$description)
 # make a vector of the new viruses order
 
-new_order <- c("DWVa", "VDV1/DWVb", "BMV", "VDV2","VOV_1","ARV_2" , "DWVc", "AmFV", "VDV3", "ABPV", "VTLV", "SV", "BQCV","VDV4", "IAPV", "KBV", "SBPV", "LSV","CBPV" ,"AFV", "ANV", "VPVL_46","VPVL_36")
+new_order <- c("DWVa", "VDV1/DWVb", "VDV2", "BMV","VOV_1","ARV_2" , "DWVc", "AmFV", "VDV3", "ABPV", "VTLV", "SV", "BQCV","VDV4", "IAPV", "KBV", "SBPV", "LSV","CBPV" ,"AFV", "ANV", "VPVL_46","VPVL_36")
 
 # re-order the viruses, based on viral load and viral abundance:
 viruses_load_arranged <- viruses_load  %>%
@@ -220,9 +220,9 @@ heatmap(x, Colv = NA, xlab="Libraries", ylab="Viruses", cexRow=1, labRow=paste(r
 #scale_fill_manual(values=c("red", "blue", "green")) +
 #scale_fill_gradient(low="cream", high="blue", space = "Lab")
  #theme(axis.text.x = element_text(angle = 30)) 
- # scale_color_brewer(palette = "BuPu") 
+ # scale_color_brewer(palette = "RdYlBu") 
 #coul <- colorRampPalette(brewer.pal(8, "Blues"))(25)
-
+#scale_fill_gradient2(low="#FFFFCC", mid = "#FF9933", high="#990000", space = "Lab")
 ```
 
 ## virus Correlation matrix: 66 libs
@@ -270,7 +270,7 @@ corrplot2 <- function(data,
     p.mat
   }
   p.mat <- cor.mtest(data, method = method)
-  col <- colorRampPalette(c("#BB4444", "#EE9988", "#FFFFFF", "#77AADD", "#4477AA"))
+  col <- colorRampPalette(c("#FFFFCC", "#FF9933","#990000"))
   corrplot(mat,
     method = "color", col = col(200), number.font = number.font,
     mar = mar, number.cex = number.cex,
@@ -293,6 +293,9 @@ virusAbundCor_66 <- corrplot2(
   type = "upper",
   tl.srt = 75
 )
+
+# hcl.colors(n = 50, palette = "RdYlBu", alpha = NULL, rev = FALSE, fixup = TRUE)
+# col <- colorRampPalette(c("#BB4444", "#EE9988", "#FFFFFF", "#77AADD", "#4477AA"))
 
 # save the matrice for future analysis (Mantel)
 save(virusAbundCor_66, file = "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/virusAbundCor_66.RData")
