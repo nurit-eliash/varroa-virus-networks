@@ -374,6 +374,26 @@ labeledHeatmap(Matrix = moduleTraitCor_66,
 
 #colors = blueWhiteRed(50),
 #colors = hcl.colors(n = 80, palette = "viridis", alpha = NULL, rev = FALSE, fixup = TRUE),
+
+# or plot it in a "clean" mode:
+sizeGrWindow(10,6)
+# Will display correlations and their p-values
+textMatrix = paste(signif(moduleTraitCor_66, 2), "\n(",
+                   signif(moduleTraitPadjust_66, 1), ")", sep = "");
+dim(textMatrix) = dim(moduleTraitCor_66)
+par(mar = c(6, 8.5, 3, 3));
+# Display the correlation values within a heatmap plot
+labeledHeatmap(Matrix = moduleTraitCor_66,
+               xLabels = names(b_viruses_load),
+               yLabels = names(MEs),
+               ySymbols = names(MEs),
+               colorLabels = FALSE,
+               colors = hcl.colors(n = 50, palette = "RdBu", alpha = NULL, rev = FALSE, fixup = TRUE),
+               #textMatrix = textMatrix,
+               setStdMargins = FALSE,
+               cex.text = 0.7,
+               zlim = c(-1,1),
+               main = paste("Varroa Module-viruses relationships"))
 ```
 
 #### hirarchial clustering of the viruses, based to their correlation to the varroa modules
