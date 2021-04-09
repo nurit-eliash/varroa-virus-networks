@@ -225,11 +225,11 @@ heatmap(x, Colv = NA, xlab="Libraries", ylab="Viruses", cexRow=1, labRow=paste(r
 #scale_fill_gradient2(low="#FFFFCC", mid = "#FF9933", high="#990000", space = "Lab")
 ```
 
-## virus Correlation matrix: 66 libs
+## virus Correlation matrix: 66 libs, 15 viruses
 ```{r prepare virus data: 66, message=FALSE, warning=FALSE}
 # plot the viruses abundance in each library 
 
-# prepare the 'viruses_load' table, with 17 viruses, 
+# prepare the 'viruses_load' table, with 15 viruses, 
 # excluding viruses with 'zero tpm': "CBPV", "AFV", "ANV" , "VPVL_46", "VPVL_36", "SBPV", also excluding viruses with low abundance :"KBV", "LSV".  left with 15 viruses
 a_viruses_load_66 <- viruses_load %>%
   filter(description %in% c("DWVa", "DWVc", "IAPV",  "ABPV", "BQCV","SV", "VDV1/DWVb", "VDV2", "VDV3", "BMV", "ARV_2", "AmFV","VTLV","VDV4","VOV_1")) %>%
@@ -270,12 +270,11 @@ corrplot2 <- function(data,
     p.mat
   }
   p.mat <- cor.mtest(data, method = method)
-  col <- colorRampPalette(c("#FFFFCC", "#FF9933","#990000"))
+  col <- colorRampPalette(c("#053061","#2166ac","#4393c3","#92c5de","#d1e5f0","#f7f7f7","#fddbc7","#f4a582","#d6604d","#b2182b","#67001f"))
   corrplot(mat,
     method = "color", col = col(200), number.font = number.font,
     mar = mar, number.cex = number.cex,
     type = type, order = order,
-    addCoef.col = "black", # add correlation coefficient
     tl.col = "black", tl.srt = tl.srt, # rotation of text labels
     # combine with significance level
     p.mat = p.mat, sig.level = sig.level, insig = "blank",
@@ -289,14 +288,15 @@ virusAbundCor_66 <- corrplot2(
   method = "pearson",
   sig.level = 0.05,
   order = "original",
-  diag = FALSE,
+  diag = TRUE, 
   type = "upper",
-  tl.srt = 75
+  tl.srt = 45
 )
 
+#tl.srt = 75 - for tilting the viruses names in 75 degrees
 # hcl.colors(n = 50, palette = "RdYlBu", alpha = NULL, rev = FALSE, fixup = TRUE)
 # col <- colorRampPalette(c("#BB4444", "#EE9988", "#FFFFFF", "#77AADD", "#4477AA"))
-
+# red - negative, blue- positive: col <- colorRampPalette(c("#67001f","#b2182b","#d6604d","#f4a582","#fddbc7","#f7f7f7","#d1e5f0","#92c5de","#4393c3","#2166ac","#053061"))
 # save the matrice for future analysis (Mantel)
 save(virusAbundCor_66, file = "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/virusAbundCor_66.RData")
 ```
@@ -349,7 +349,7 @@ corrplot2 <- function(data,
     p.mat
   }
   p.mat <- cor.mtest(data, method = method)
-  col <- colorRampPalette(c("#BB4444", "#EE9988", "#FFFFFF", "#77AADD", "#4477AA"))
+  col <- colorRampPalette(c("blue","white","red"))(200)
   corrplot(mat,
     method = "color", col = col(200), number.font = number.font,
     mar = mar, number.cex = number.cex,

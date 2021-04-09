@@ -348,7 +348,7 @@ mantel.test(corModulTrait_66, virusAbundCor_66, graph = TRUE,
 mantel(corModulTrait_66, virusAbundCor_66, method="pearson", permutations=1000)
 
 #plot the correlation
-verboseScatterplot(x = corModulTrait_66, y = virusAbundCor_66, main = "Viral abundance predicts varroa-virus interaction", xlab = "Varroa-virus interaction", ylab = "Virus abundance")
+verboseScatterplot(x = virusAbundCor_66, y = corModulTrait_66, main = "Viral abundance predicts varroa-virus interaction", xlab = "Viruses interaction", ylab = "Varroa-virus interaction")
 ```
 
 ### WGCNA 3.a Quantifying module–trait associations
@@ -365,7 +365,8 @@ labeledHeatmap(Matrix = moduleTraitCor_66,
                yLabels = names(MEs),
                ySymbols = names(MEs),
                colorLabels = FALSE,
-               colors = hcl.colors(n = 50, palette = "RdYlBu", alpha = NULL, rev = FALSE, fixup = TRUE),
+               colors = hcl.colors(n = 50, palette = "RdBu", alpha = NULL, rev = FALSE, fixup = TRUE),
+               invertColors = TRUE,
                textMatrix = textMatrix,
                setStdMargins = FALSE,
                cex.text = 0.7,
@@ -374,8 +375,9 @@ labeledHeatmap(Matrix = moduleTraitCor_66,
 
 #colors = blueWhiteRed(50),
 #colors = hcl.colors(n = 80, palette = "viridis", alpha = NULL, rev = FALSE, fixup = TRUE),
+#colors = hcl.colors(n = 50, palette = "RdBu", alpha = NULL, rev = FALSE, fixup = TRUE)
 
-# or plot it in a "clean" mode:
+# or plot it in a "clean" mode, with module numbers:
 sizeGrWindow(10,6)
 # Will display correlations and their p-values
 textMatrix = paste(signif(moduleTraitCor_66, 2), "\n(",
@@ -389,6 +391,7 @@ labeledHeatmap(Matrix = moduleTraitCor_66,
                ySymbols = names(MEs),
                colorLabels = FALSE,
                colors = hcl.colors(n = 50, palette = "RdBu", alpha = NULL, rev = FALSE, fixup = TRUE),
+               invertColors = TRUE,
                #textMatrix = textMatrix,
                setStdMargins = FALSE,
                cex.text = 0.7,
@@ -398,8 +401,11 @@ labeledHeatmap(Matrix = moduleTraitCor_66,
 
 #### hirarchial clustering of the viruses, based to their correlation to the varroa modules
 ```{r eval=F, echo=T}
-#plot hirarchial clustering of the viruses, based to their correlation to the varroa modules.
+#plot hierarchical clustering of the viruses, based to their correlation to the varroa modules.
 plot(hclust(dist(abs(transposeBigData(moduleTraitCor)))))
+
+#plot hierarchical clustering of the modules, based to their correlation to the viruses load
+plot(hclust(dist(abs(moduleTraitCor))))
 ```
 
 We quantify associations of individual genes with our trait of interest (viral load) by defining Gene Significance GS as (the absolute value of) the correlation between the gene and the trait. 
