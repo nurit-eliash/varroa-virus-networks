@@ -55,6 +55,7 @@ library("viridis")
 library("hrbrthemes")
 library("ggthemes")
 library("RColorBrewer")
+library("naniar")
 
 knitr::opts_chunk$set(echo = TRUE)
 ```
@@ -119,25 +120,22 @@ x <- left_join(virusId, df, by = "target_id") %>% dplyr::select(-target_id)
   
 # VOV_1. virus genome has been described in 6 different segments (Levin et al. 2016). 
 # so we sum the 6 segments tpms in each library in a separate table 'VOV_1':
-    VOV_1 <- x %>% 
+VOV_1 <- x %>% 
       dplyr::slice(3:8) %>%
       group_by(description) %>%
       summarize_all(sum)
 #filter out the segments of VOV_1,  
 x <- dplyr::filter(x, description != "VOV_1")
 
-# and bind the two data frames together 
-viruses_load <- rbind(x, VOV_1) 
-
-# reorder the viruses, so VOV_1 will appear in row number 3
-r <- 2
+# insert VOV_1 in row 3 
+r <- 3
 insertRow <- function(x, VOV_1, r) {
   x[seq(r+1,nrow(x)+1),] <- x[seq(r,nrow(x)),]
   x[r,] <- VOV_1
   x
 }
 
-insertRow(x, VOV_1, r)
+viruses_load <- insertRow(x, VOV_1, r)
 head(viruses_load)
 saveRDS(viruses_load, file = "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/viruses_load.RData")
 ```
@@ -188,12 +186,13 @@ virus_abund <- viruses_load_arranged %>%
 
 virus_abund[, 3] <- (virus_abund[,3]+ 0.000001)
 virus_abund[, 3] <- log10(virus_abund[,3]) 
-
+virus_abund <- replace_with_na(virus_abund, replace = list(tpm = -6))
+  
 # now make a heat map
 ggplot(data = virus_abund, mapping = aes(x = description,
                                                        y = library,
                                                        fill = tpm)) +
-  scale_fill_gradient2(low="#FFFFCC", mid = "#FF9933", high="#990000", space = "Lab") +
+  scale_fill_gradient2(low="#FFFFCC", mid = "#FF9933", high="#990000",  na.value = "grey92") +
   geom_tile() +
   theme_linedraw() +
   xlab(label = "Viruses") +
@@ -203,7 +202,6 @@ ggplot(data = virus_abund, mapping = aes(x = description,
   theme(axis.ticks = element_blank())
 
 
-  
 
 # or use heatmap() function
 x <- viruses_load %>%
@@ -232,7 +230,7 @@ heatmap(x, Colv = NA, xlab="Libraries", ylab="Viruses", cexRow=1, labRow=paste(r
 # prepare the 'viruses_load' table, with 15 viruses, 
 # excluding viruses with 'zero tpm': "CBPV", "AFV", "ANV" , "VPVL_46", "VPVL_36", "SBPV", also excluding viruses with low abundance :"KBV", "LSV".  left with 15 viruses
 a_viruses_load_66 <- viruses_load %>%
-  filter(description %in% c("DWVa", "DWVc", "IAPV",  "ABPV", "BQCV","SV", "VDV1/DWVb", "VDV2", "VDV3", "BMV", "ARV_2", "AmFV","VTLV","VDV4","VOV_1")) %>%
+  filter(description %in% c("DWVa", "ARV_2","VOV_1", "BMV","AmFV","ABPV","VTLV","IAPV","SV","VDV1/DWVb","DWVc","BQCV","VDV3","VDV2","VDV4")) %>%
   column_to_rownames("description") %>% 
   transposeBigData() %>%
   rownames_to_column("library") %>%
@@ -288,10 +286,57 @@ virusAbundCor_66 <- corrplot2(
   method = "pearson",
   sig.level = 0.05,
   order = "original",
-  diag = TRUE, 
-  type = "upper",
+  diag = T, 
+  type = "full",
   tl.srt = 45
 )
+
+
+# correlogram without viruses names:
+corrplot2 <- function(data,
+                      method = "pearson",
+                      order = "original",
+                      diag = FALSE,
+                      type = "upper",
+                      tl.srt = 90,
+                      mar = c(0, 0, 0, 0)) {
+  
+  data_incomplete <- data
+  data <- data[complete.cases(data), ]
+  mat <- cor(data, method = method)
+  cor.mtest <- function(mat, method) {
+    mat <- as.matrix(mat)
+    n <- ncol(mat)
+    p.mat <- matrix(NA, n, n)
+    diag(p.mat) <- 0
+    for (i in 1:(n - 1)) {
+      for (j in (i + 1):n) {
+        tmp <- cor.test(mat[, i], mat[, j], method = method)
+        p.mat[i, j] <- p.mat[j, i] <- tmp$p.value
+      }
+    }
+    colnames(p.mat) <- rownames(p.mat) <- colnames(mat)
+    p.mat
+  }
+  p.mat <- cor.mtest(data, method = method)
+  col <- colorRampPalette(c("#053061","#2166ac","#4393c3","#92c5de","#d1e5f0","#f7f7f7","#fddbc7","#f4a582","#d6604d","#b2182b","#67001f"))
+  corrplot(mat,
+    method = "color", col = col(200), 
+    mar = mar, 
+    type = type, order = order,
+    tl.col = "black",
+    # hide correlation coefficients on the diagonal
+    diag = diag
+  )
+}
+
+virusAbundCor_66 <- corrplot2(
+  data = a_viruses_load_66,
+  method = "pearson",
+ order = "original",
+  diag = T, 
+ tl.srt = 45,
+  type = "upper")
 
 #tl.srt = 75 - for tilting the viruses names in 75 degrees
 # hcl.colors(n = 50, palette = "RdYlBu", alpha = NULL, rev = FALSE, fixup = TRUE)
