@@ -107,7 +107,7 @@ GO_enrich.vd %>%
   write.csv(file = "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/GO_term_magenta_1.csv")
 ```
 
-# plot the go-terms analysis, per module
+## plot the go-terms analysis, per module
 ```{r eval=F}
 #load the go term enrichment analysis done using package ‘Category’
 genesGO_0 <- read.csv("/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/GO_term_magenta.csv")
