@@ -1,23 +1,26 @@
 ---
-title: "GO term Varroa"
+title: "GO Enrichment analysis for specific varroa modules"
 author: "Nurit"
 date: "2/5/2021"
-output: html_document
+output:
+  html_document:
+    theme: paper
+    toc: yes
+    toc_depth: 5
+    toc_float:
+      collapsed: yes
+      df_print: paged
 ---
 
-
-# GO Enrichment analysis for specific modules, and for the hub-genes
-
-# Load libraries
-
-```{r libraries}
-library(dplyr)
-library(tidyverse)
-library(vegan)
-library(DESeq2)
-library(ggfortify)
-library(WGCNA)
-library(rmarkdown)
+## Load libraries
+```{r libraries, include=FALSE}
+library("dplyr")
+library("tidyverse")
+library("vegan")
+library("DESeq2")
+library("ggfortify")
+library("WGCNA")
+library("rmarkdown")
 library("knitr") # for the markdown
 library("kableExtra") # for creating a scrolling table
 library("ggplot2") # for plotting 
@@ -39,12 +42,19 @@ library("rgdal")
 library("grid")
 library("gridExtra")
 library("GeneOverlap")
-library(cluster)
+library("cluster")
 ```
 
-- data provided in here [link](https://github.com/MaevaTecher/varroa-denovo-genomes/blob/master/data/Positive%20selection/Vdesselected1511.csv)
-- codes provided in here [link](https://maevatecher.github.io/varroa-denovo-genomes/#go_term_enrichment_of_positively_selected_genes)
-```{r eval=FALSE echo=TRUE}
+```{r eval=FALSE, include=FALSE}
+#the working directory is in GitHb:
+setwd("/Users/nuriteliash/Documents/GitHub/varroa-virus-networks")
+```
+
+- data provided in [here](https://github.com/MaevaTecher/varroa-denovo-genomes/blob/master/data/Positive%20selection/Vdesselected1511.csv)
+- codes provided in [here](https://maevatecher.github.io/varroa-denovo-genomes/#go_term_enrichment_of_positively_selected_genes)
+
+## Goterm enrichment analysis
+```{r eval=TRUE, echo=TRUE}
 #Preparing the GO frame
 annot.vd <- read.csv("/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/data/VdesGOready2.csv") 
 
@@ -61,26 +71,27 @@ gsc.vd <-GeneSetCollection(goAllFrame.vd, setType = GOCollection())
 universe.vd <- unique(annot.vd2$gene)
 head(universe.vd)
 
+
 # Load the expression and trait data saved in the first part 
-load("/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/varroa_virus-01-dataInput.RData")
+lnames <- load(file = "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/varroa_virus-01-dataInput.RData"); 
+lnames 
 
-# load the network info
-load("/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/Varroa_modules_networkConstruction-auto.RData")
+# Load network data saved in the second part.
+lnames = load(file = "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/Varroa_modules_networkConstruction-auto.RData")
+lnames
 
-# change "cyan" to the name of the desired module, in the first line: [moduleColors=="cyan"], and in the final "write.csv(file = "GO_term_enrichment_**cyan**BP.csv")
-ME <- names(for_modules)[moduleColors=="magenta"]
-ME_df <- data.frame(geneno = ME,Gene.id = ME)
-ME_df$Gene.id <- paste("LOC", ME_df$Gene.id, sep="")
+# change "salmon" to the name of the desired module, in the first line: [moduleColors=="salmon"], and in the final "write.csv(file = "GO_term_enrichment_**salmon**BP.csv")
+ME <- names(for_modules)[moduleColors=="salmon"]
+ME_df <- data.frame(gene = ME)
 
 #or change "ME_df" to any table of sets of genes, that i wish to do GO-enrichment analysis:
-# for exanple, Goterms for the hub-genes only, (hub_annot_53): genes.vd <- read.csv("hub_annot_53.csv")
-
-genes.vd <- as.integer(unique(ME_df$geneno))
+genes.vd <- unique(ME_df$gene)
 head(genes.vd)
 
 params.vd <- GSEAGOHyperGParams(name = "Vd_GO_enrichment",
                                 geneSetCollection = gsc.vd,
                                 geneIds = genes.vd,
+                                # when im changing universeGeneIds = NULL, then i dont get the warning
                                 universeGeneIds = universe.vd,
                                 ontology = "BP", # change with MF, CC to test all
                                 pvalueCutoff = 0.05,
@@ -93,8 +104,11 @@ over.vd <- hyperGTest(params.vd)
 GO_enrich.vd <- as.data.frame(summary(over.vd))
 GO_enrich.vd %>% 
   arrange(Pvalue) %>% 
-  write.csv(file = "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/GO_term_magenta.csv")
+  write.csv(file = "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/GO_term_magenta_1.csv")
+```
 
+# plot the go-terms analysis, per module
+```{r eval=F}
 #load the go term enrichment analysis done using package ‘Category’
 genesGO_0 <- read.csv("/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/GO_term_magenta.csv")
 

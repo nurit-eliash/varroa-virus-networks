@@ -84,12 +84,15 @@ just make the "for_modules" file and save it for subsequent analysis.
 ("SRR5109825", "SRR5109827", "SRR533974" , "SRR3927496", "SRR8867385")
 ### PCA libraries by gene, to detect outlier libraries
 ```{r  message=FALSE, warning=FALSE}
+#load data:
+load("/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/gene_tpm.RData")
+
 #transpose final_gene_tpm, and transform (log10+0.000001) 
 final_gene_tpm_T<- transposeBigData(log10(final_gene_tpm + 0.000001))
 
 #plot PCA, detect outlier libraries
 autoplot(prcomp(final_gene_tpm_T), label = TRUE)+
-  ggtitle("66 libraries")
+  ggtitle("PCA of 66 libraries based on gene expression and viral load")
 
 #remove outlier libraries (by col)
 for_modules <- final_gene_tpm %>% transposeBigData() 

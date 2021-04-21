@@ -225,6 +225,8 @@ heatmap(x, Colv = NA, xlab="Libraries", ylab="Viruses", cexRow=1, labRow=paste(r
 
 ## virus Correlation matrix: 66 libs, 15 viruses
 ```{r prepare virus data: 66, message=FALSE, warning=FALSE}
+viruses_load <- readRDS(file = "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/viruses_load.RData")
+
 # plot the viruses abundance in each library 
 
 # prepare the 'viruses_load' table, with 15 viruses, 
