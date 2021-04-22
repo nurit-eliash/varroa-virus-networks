@@ -81,7 +81,7 @@ head(universe.vd)
 
 # Preparing the gene set (list of genes in an interesting module) 
 # change "salmon" to the name of the desired module, in the first line: [moduleColors=="salmon"], and in the final "write.csv(file = "GO_term_enrichment_**salmon**BP.csv")
-ME <- names(for_modules)[moduleColors=="salmon"]
+ME <- names(for_modules)[moduleColors=="black"]
 ME_df <- data.frame(gene = ME)
 genes.vd <- unique(ME_df$gene)
 head(genes.vd)
@@ -103,27 +103,244 @@ summary(over.vd)
 GO_enrich.vd <- as.data.frame(summary(over.vd))
 GO_enrich.vd %>% 
   arrange(Pvalue) %>% 
-  write.csv(file = "/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/GO_term_salmon.csv")
+  write.csv(file = "/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/GO_term_black.csv")
 ```
 
 ## plot the go-terms analysis, per module
 ```{r eval=F}
 #load the go term enrichment analysis done using package ‘Category’
-genesGO_0 <- read.csv("/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/GO_term_magenta.csv")
+genesGO_0 <- read.csv("/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/GO_term_salmon.csv")
 
 # keep only highly significant terms
 genesGO <- genesGO_0 %>%
-  filter(Pvalue < 0.0000000001) 
+  filter(Pvalue < 0.0001) 
 
 #you can play with the number of terms by adjusting the "filter(Pvalue < 0.0000000001)"
 
-#now plot it
+#now plot it based on the count of each term and the pvalue:
 g <- genesGO %>%
   mutate(logPv = log(Pvalue))
 
-#or plot it based on the count of each term and the pvalue:
 ggplot(g, aes(x = 0, y = Term, size = Count, color = logPv)) +
+  scale_color_gradient(low= "#f0e11a", high="#f70a1a") +
   geom_point(alpha = 0.9) +
+  geom_point(shape = 1,colour = "black") +
   theme_classic() +
-  ggtitle("Magenta GO-terms")
+  ggtitle("GOterm enrichment analysis \n module 13") +
+  xlab(label = "") +
+  ylab(label = "GOterm") +
+  scale_x_discrete()
+  
+```
+
+## plot all significant modules go-terms
+### module 13, salmon
+```{r eval=F}
+#load the go term enrichment analysis done using package ‘Category’
+GOME_13_0 <- read.csv("/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/GO_term_salmon.csv")
+
+# keep only highly significant terms
+GOME_13 <- GOME_13_0 %>%
+  filter(Pvalue < 0.0001) %>%
+  mutate(logPv = log(Pvalue))
+
+#now plot it based on the count of each term and the pvalue:
+GO_13 <- ggplot(GOME_13, aes(x = 0, y = Term, size = Count, color = logPv)) +
+  scale_color_gradient(low= "#f0e11a", high="#f70a1a") +
+  geom_point(alpha = 0.9) +
+  geom_point(shape = 1,colour = "black") +
+  theme_classic() +
+  ggtitle("GOterm enrichment analysis \n module 13") +
+  xlab(label = "") +
+  ylab(label = "GOterm") +
+  scale_x_discrete()
+```
+ 
+### module 3, Brown:
+```{r} 
+#load the go term enrichment analysis done using package ‘Category’
+GOME_3_0 <- read.csv("/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/GO_term_brown.csv")
+
+# keep only highly significant terms
+GOME_3 <- GOME_3_0 %>%
+  filter(Pvalue < 0.00001) %>%
+  mutate(logPv = log(Pvalue))
+
+#now plot it based on the count of each term and the pvalue:
+GO_3 <- ggplot(GOME_3, aes(x = 0, y = Term, size = Count, color = logPv)) +
+  scale_color_gradient(low= "#f0e11a", high="#f70a1a") +
+  geom_point(alpha = 0.9) +
+  geom_point(shape = 1,colour = "black") +
+  theme_classic() +
+  ggtitle("GOterm enrichment analysis \n module 3") +
+  xlab(label = "") +
+  ylab(label = "GOterm") +
+  scale_x_discrete()
+```
+
+### module 6, red:
+```{r} 
+#load the go term enrichment analysis done using package ‘Category’
+GOME_6_0 <- read.csv("/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/GO_term_red.csv")
+
+# keep only highly significant terms
+GOME_6 <- GOME_6_0 %>%
+  filter(Pvalue < 0.01) %>%
+  mutate(logPv = log(Pvalue))
+
+#now plot it based on the count of each term and the pvalue:
+GO_6 <- ggplot(GOME_6, aes(x = 0, y = Term, size = Count, color = logPv)) +
+  scale_color_gradient(low= "#f0e11a", high="#f70a1a") +
+  geom_point(alpha = 0.9) +
+  geom_point(shape = 1,colour = "black") +
+  theme_classic() +
+  ggtitle("GOterm enrichment analysis \n module 6") +
+  xlab(label = "") +
+  ylab(label = "GOterm") +
+  scale_x_discrete()
+```
+
+### module 9, magenta:
+```{r} 
+#load the go term enrichment analysis done using package ‘Category’
+GOME_9_0 <- read.csv("/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/GO_term_magenta.csv")
+
+# keep only highly significant terms
+GOME_9 <- GOME_9_0 %>%
+  filter(Pvalue < 0.0000000001) %>%
+  mutate(logPv = log(Pvalue))
+
+#now plot it based on the count of each term and the pvalue:
+GO_9 <- ggplot(GOME_9, aes(x = 0, y = Term, size = Count, color = logPv)) +
+  scale_color_gradient(low= "#f0e11a", high="#f70a1a") +
+  geom_point(alpha = 0.9) +
+  geom_point(shape = 1,colour = "black") +
+  theme_classic() +
+  ggtitle("GOterm enrichment analysis \n module 9") +
+  xlab(label = "") +
+  ylab(label = "GOterm") +
+  scale_x_discrete()
+```
+### module 1, turquoise:
+```{r} 
+#load the go term enrichment analysis done using package ‘Category’
+GOME_1_0 <- read.csv("/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/GO_term_turquoise.csv")
+
+# keep only highly significant terms
+GOME_1 <- GOME_1_0 %>%
+  filter(Pvalue < 0.00001) %>%
+  mutate(logPv = log(Pvalue))
+
+#now plot it based on the count of each term and the pvalue:
+GO_1 <- ggplot(GOME_1, aes(x = 0, y = Term, size = Count, color = logPv)) +
+  scale_color_gradient(low= "#f0e11a", high="#f70a1a") +
+  geom_point(alpha = 0.9) +
+  geom_point(shape = 1,colour = "black") +
+  theme_classic() +
+  ggtitle("GOterm enrichment analysis \n module 1") +
+  xlab(label = "") +
+  ylab(label = "GOterm") +
+  scale_x_discrete()
+```
+
+### module 5, green:
+```{r} 
+#load the go term enrichment analysis done using package ‘Category’
+GOME_5_0 <- read.csv("/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/GO_term_green.csv")
+
+# keep only highly significant terms
+GOME_5 <- GOME_5_0 %>%
+  filter(Pvalue < 0.001) %>%
+  mutate(logPv = log(Pvalue))
+
+#now plot it based on the count of each term and the pvalue:
+GO_5 <- ggplot(GOME_5, aes(x = 0, y = Term, size = Count, color = logPv)) +
+  scale_color_gradient(low= "#f0e11a", high="#f70a1a") +
+  geom_point(alpha = 0.9) +
+  geom_point(shape = 1,colour = "black") +
+  theme_classic() +
+  ggtitle("GOterm enrichment analysis \n module 5") +
+  xlab(label = "") +
+  ylab(label = "GOterm") +
+  scale_x_discrete()
+```
+
+### module 10, purple:
+```{r} 
+#load the go term enrichment analysis done using package ‘Category’
+GOME_10_0 <- read.csv("/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/GO_term_purple.csv")
+
+# keep only highly significant terms
+GOME_10 <- GOME_10_0 %>%
+  filter(Pvalue < 0.00005) %>%
+  mutate(logPv = log(Pvalue))
+
+#now plot it based on the count of each term and the pvalue:
+GO_10 <- ggplot(GOME_10, aes(x = 0, y = Term, size = Count, color = logPv)) +
+  scale_color_gradient(low= "#f0e11a", high="#f70a1a") +
+  geom_point(alpha = 0.9) +
+  geom_point(shape = 1,colour = "black") +
+  theme_classic() +
+  ggtitle("GOterm enrichment analysis \n module 10") +
+  xlab(label = "") +
+  ylab(label = "GOterm") +
+  scale_x_discrete()
+```
+
+### module 14, cyan:
+```{r} 
+#load the go term enrichment analysis done using package ‘Category’
+GOME_14_0 <- read.csv("/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/GO_term_cyan.csv")
+
+# keep only highly significant terms
+GOME_14 <- GOME_14_0 %>%
+  filter(Pvalue < 0.001) %>%
+  mutate(logPv = log(Pvalue))
+
+#now plot it based on the count of each term and the pvalue:
+GO_14 <- ggplot(GOME_14, aes(x = 0, y = Term, size = Count, color = logPv)) +
+  scale_color_gradient(low= "#f0e11a", high="#f70a1a") +
+  geom_point(alpha = 0.9) +
+  geom_point(shape = 1,colour = "black") +
+  theme_classic() +
+  ggtitle("GOterm enrichment analysis \n module 14") +
+  xlab(label = "") +
+  ylab(label = "GOterm") +
+  scale_x_discrete()
+```
+
+### module 7, black:
+```{r} 
+#load the go term enrichment analysis done using package ‘Category’
+GOME_7_0 <- read.csv("/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/GO_term_black.csv")
+
+# keep only highly significant terms
+GOME_7 <- GOME_7_0 %>%
+  filter(Pvalue < 0.001) %>%
+  mutate(logPv = log(Pvalue))
+
+#now plot it based on the count of each term and the pvalue:
+GO_7 <- ggplot(GOME_7, aes(x = 0, y = Term, size = Count, color = logPv)) +
+  scale_color_gradient(low= "#f0e11a", high="#f70a1a") +
+  geom_point(alpha = 0.9) +
+  geom_point(shape = 1,colour = "black") +
+  theme_classic() +
+  ggtitle("GOterm enrichment analysis \n module 7") +
+  xlab(label = "") +
+  ylab(label = "GOterm") +
+  scale_x_discrete()
+```
+### plot all significant interacting modules:
+```{r}
+# modules positively interacting with ARV-2 and VOV_1 (module 3), and with VDV2 and VDV4 (modules 6, 9):
+grid.arrange(GO_3, GO_6, GO_9,  nrow = 2, ncol =2)
+
+# modules negatively interacting ONLY with DWVa: 
+grid.arrange(GO_1 ,GO_5, GO_10, nrow = 1)
+
+# modules positively interacting ONLY with DWVa: 
+grid.arrange(GO_14, GO_7, nrow = 1)
+
+# module negatively interacting with DWVa, DWVc, BQCV and VDV3
+GO_13
 ```
