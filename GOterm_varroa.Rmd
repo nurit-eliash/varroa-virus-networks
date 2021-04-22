@@ -45,9 +45,18 @@ library("GeneOverlap")
 library("cluster")
 ```
 
+## seting working dir and loading data 
 ```{r eval=FALSE, include=FALSE}
 #the working directory is in GitHb:
 setwd("/Users/nuriteliash/Documents/GitHub/varroa-virus-networks")
+
+# Load the expression and trait data saved in the first part 
+load(file = "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/varroa_virus-01-dataInput.RData"); 
+
+# Load network data saved in the second part.
+load(file = "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/Varroa_modules_networkConstruction-auto.RData")
+
+annot.vd <- read.csv("/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/data/VdesGOready2.csv") 
 ```
 
 - data provided in [here](https://github.com/MaevaTecher/varroa-denovo-genomes/blob/master/data/Positive%20selection/Vdesselected1511.csv)
@@ -56,8 +65,6 @@ setwd("/Users/nuriteliash/Documents/GitHub/varroa-virus-networks")
 ## Goterm enrichment analysis
 ```{r eval=TRUE, echo=TRUE}
 #Preparing the GO frame
-annot.vd <- read.csv("/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/data/VdesGOready2.csv") 
-
 annot.vd2 <- annot.vd %>%
   mutate(evidence = "IEA") %>%
   dplyr::select(go_id = GO.ids, evidence, gene = Gene.id)
@@ -68,23 +75,14 @@ goFrame.vd <-GOFrame(annot.vd2, organism = "Vd")
 goAllFrame.vd <-GOAllFrame(goFrame.vd)
 gsc.vd <-GeneSetCollection(goAllFrame.vd, setType = GOCollection())
 
+#Preparing the universe
 universe.vd <- unique(annot.vd2$gene)
 head(universe.vd)
 
-
-# Load the expression and trait data saved in the first part 
-lnames <- load(file = "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/varroa_virus-01-dataInput.RData"); 
-lnames 
-
-# Load network data saved in the second part.
-lnames = load(file = "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/Varroa_modules_networkConstruction-auto.RData")
-lnames
-
+# Preparing the gene set (list of genes in an interesting module) 
 # change "salmon" to the name of the desired module, in the first line: [moduleColors=="salmon"], and in the final "write.csv(file = "GO_term_enrichment_**salmon**BP.csv")
 ME <- names(for_modules)[moduleColors=="salmon"]
 ME_df <- data.frame(gene = ME)
-
-#or change "ME_df" to any table of sets of genes, that i wish to do GO-enrichment analysis:
 genes.vd <- unique(ME_df$gene)
 head(genes.vd)
 
@@ -99,12 +97,13 @@ params.vd <- GSEAGOHyperGParams(name = "Vd_GO_enrichment",
                                 testDirection = "over")
 
 over.vd <- hyperGTest(params.vd)
+over.vd
+summary(over.vd)
 
-#summary(over.vd)
 GO_enrich.vd <- as.data.frame(summary(over.vd))
 GO_enrich.vd %>% 
   arrange(Pvalue) %>% 
-  write.csv(file = "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/GO_term_magenta_1.csv")
+  write.csv(file = "/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/GO_term_salmon.csv")
 ```
 
 ## plot the go-terms analysis, per module
