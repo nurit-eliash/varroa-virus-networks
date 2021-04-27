@@ -331,7 +331,7 @@ GO_7 <- ggplot(GOME_7, aes(x = 0, y = Term, size = Count, color = logPv)) +
   scale_x_discrete()
 ```
 ### plot all significant interacting modules:
-```{r}
+```{r eval=FALSE, include=FALSE}
 # modules positively interacting with ARV-2 and VOV_1 (module 3), and with VDV2 and VDV4 (modules 6, 9):
 grid.arrange(GO_3, GO_6, GO_9,  nrow = 2, ncol =2)
 

@@ -59,7 +59,7 @@ final_gene_tpm
 
 #remove libraries (by col):
 # 5 outlier libraries ("SRR5109825", "SRR5109827", "SRR533974" , "SRR3927496", "SRR8867385")
-# and 9 non-female libraries (SRR5760848, SRR5760838, SRR5760828, SRR5760818, SRR5377265 ,SRR5377270 ,SRR5377269 ,SRR5377263 ,SRR5377266)
+# and 9 non-adult female libraries (SRR5760848, SRR5760838, SRR5760828, SRR5760818, SRR5377265 ,SRR5377270 ,SRR5377269 ,SRR5377263 ,SRR5377266)
 # we are left with 57 libraries of female mites. 
 for_modules_female <- final_gene_tpm %>%   
   dplyr::select(-c("SRR5760848", "SRR5760838", "SRR5760828", "SRR5760818", "SRR5377265" ,"SRR5377270" ,"SRR5377269" ,"SRR5377263" ,"SRR5377266")) %>%

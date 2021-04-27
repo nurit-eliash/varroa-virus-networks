@@ -58,7 +58,7 @@ library("ggpubr")
 library("GGally")
 ```
 
-### import and join varroa data
+### Import and join varroa data
 ```{r message=FALSE, warning=FALSE}
 #import the varroa transcripts ("target_id") and their corresponding gene ("gene_id"). and add a col names.
 varroa_isoforms <- read_tsv("/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/data/gene2isoform.txt.gz", col_names = c("gene_id", "target_id"))
@@ -273,20 +273,16 @@ datExpr = "for_modules" : varroa genes in columns, libraries in rows
 
 ### WGCNA 3.a Quantifying module–trait associations
 ```{r eval=F, echo=T}
-#if you are starting from here,  
+#if you are starting from this chunk,  
 # Load the expression and trait data saved in the first part 
-lnames <- load(file = "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/varroa_virus-01-dataInput.RData"); 
-
-#The variable lnames contains the names of loaded variables. 
-lnames 
+load(file = "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/varroa_virus-01-dataInput.RData"); 
 
 # Load network data saved in the second part.
-lnames = load(file = "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/Varroa_modules_networkConstruction-auto.RData"); 
-lnames
+load(file = "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/Varroa_modules_networkConstruction-auto.RData"); 
 
 # Define numbers of genes and samples
 nGenes = ncol(for_modules);
-nSamples = nrow(for_modules);
+nSamples = nrow(for_modules)
 # Recalculate MEs with color labels 
 MEs0 = moduleEigengenes(for_modules, moduleColors)$eigengenes
 MEs = orderMEs(MEs0)
@@ -323,21 +319,8 @@ moduleTraitPadjust <- column_to_rownames(moduleTraitPadjust, "module")
 moduleTraitCor_66 <- as.matrix(moduleTraitCor)
 moduleTraitPadjust_66 <- as.matrix(moduleTraitPadjust)
 
-# save the matrices for next analysis
-save(moduleTraitCor_66,moduleTraitPadjust_66, file = "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/moduleTraitCor_66.RData")
-```
-
-#### WGCNA 3.a Quantifying module–trait associations (ModuleColors and ModuleLables)
-```{r eval=F, echo=T}
-lnames <- load(file = "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/varroa_virus-01-dataInput.RData"); 
-lnames 
-
-# Recalculate MEs with color labels 
-MEs0 = moduleEigengenes(for_modules, moduleColors)$eigengenes
-MEs = orderMEs(MEs0)
-
+#  Display correlations and their adjusted p-values
 sizeGrWindow(10,6)
-# Will display correlations and their p-values
 textMatrix = paste(signif(moduleTraitCor_66, 2), "\n(",
                    signif(moduleTraitPadjust_66, 1), ")", sep = "");
 dim(textMatrix) = dim(moduleTraitCor_66)
@@ -356,36 +339,15 @@ labeledHeatmap(Matrix = moduleTraitCor_66,
                zlim = c(-1,1),
                main = paste("Varroa Module-viruses relationships"))
 
-##########
-# Recalculate MEs with module numbers 
-MEnumbers0 = moduleEigengenes(for_modules, as.character(moduleLabels))$eigengenes
-MEnumbers = orderMEs(MEnumbers0)
+# save the matrices for next analysis
+save(moduleTraitCor_66,moduleTraitPadjust_66, file = "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/moduleTraitCor_66.RData")
 
-sizeGrWindow(10,6)
-# Will display correlations and their p-values
-textMatrix = paste(signif(moduleTraitCor_66, 2), "\n(",
-                   signif(moduleTraitPadjust_66, 1), ")", sep = "");
-dim(textMatrix) = dim(moduleTraitCor_66)
-par(mar = c(6, 8.5, 3, 3));
-# Display the correlation values within a heatmap plot
-labeledHeatmap(Matrix = moduleTraitCor_66,
-               xLabels = names(b_viruses_load),
-               yLabels = names(MEnumbers),
-               ySymbols = names(MEnumbers),
-               colorLabels = FALSE,
-               colors = hcl.colors(n = 50, palette = "RdBu", alpha = NULL, rev = FALSE, fixup = TRUE),
-               invertColors = TRUE,
-               textMatrix = textMatrix,
-               setStdMargins = FALSE,
-               cex.text = 0.7,
-               zlim = c(-1,1),
-               main = paste("Varroa Module-viruses relationships"))
 
 #colors = blueWhiteRed(50),
 #colors = hcl.colors(n = 80, palette = "viridis", alpha = NULL, rev = FALSE, fixup = TRUE),
 #colors = hcl.colors(n = 50, palette = "RdBu", alpha = NULL, rev = FALSE, fixup = TRUE)
 
-# or plot it in a "clean" mode, with module numbers:
+# or plot it in a "clean" mode
 sizeGrWindow(10,6)
 # Will display correlations and their p-values
 textMatrix = paste(signif(moduleTraitCor_66, 2), "\n(",
@@ -395,8 +357,8 @@ par(mar = c(6, 8.5, 3, 3));
 # Display the correlation values within a heatmap plot
 labeledHeatmap(Matrix = moduleTraitCor_66,
                xLabels = names(b_viruses_load),
-               yLabels = names(MEnumbers),
-               ySymbols = names(MEnumbers),
+               yLabels = names(MEs),
+               ySymbols = names(MEs),
                colorLabels = FALSE,
                colors = hcl.colors(n = 50, palette = "RdBu", alpha = NULL, rev = FALSE, fixup = TRUE),
                invertColors = TRUE,
@@ -419,17 +381,16 @@ plot(hclust(dist(abs(moduleTraitCor))))
 # Mantel-test: Can we predict the virus-varroa interaction given the virus abundance? 
 correlation btw two matrices
 ```{r eval=F, echo=T}
-# x: how virus interacts with varroa expression, and y: the correlation of viral abundance across samples}
+# x: how virus interacts with varroa expression, and y: the correlation of viral abundance across samples
 
 # load the two matrices:
 # the module–trait association matrix 
-names <- load(file = "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/moduleTraitCor_66.RData"); 
-names
-# and the viral abundance correlogram
-names <- load(file = "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/virusAbundCor_66.RData"); 
-names
+load(file = "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/moduleTraitCor_66.RData"); 
 
-# make corleation matrix of the "moduleTraitCor":
+# and the viral abundance correlogram
+load(file = "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/virusAbundCor_66.RData"); 
+
+# make correlation matrix of the "moduleTraitCor":
 corModulTrait_66 <- cor(moduleTraitCor_66)
 
 # (1) Mantel test using "ape" library:
@@ -442,9 +403,9 @@ mantel.test(corModulTrait_66, virusAbundCor_66, graph = TRUE,
 mantel(corModulTrait_66, virusAbundCor_66, method="pearson", permutations=1000)
 
 #plot the correlation
-verboseScatterplot(x = virusAbundCor_66, y = corModulTrait_66, main = "Viral abundance predicts varroa-virus interaction", xlab = "Viruses interaction", ylab = "Varroa-virus interaction")
+verboseScatterplot(x = virusAbundCor_66, y = corModulTrait_66, main = "Viral abundance predicts varroa-virus interaction", xlab = "Viruses interaction", ylab = "Varroa-virus interaction", abline = T, abline.color = "black")
 
-verboseScatterplot(x = corModulTrait_66, y = virusAbundCor_66, main = "Viral abundance predicts varroa-virus interaction", xlab = "Correlation of viral interaction with varroa modules", ylab = "Correlation of viral abundances")
+verboseScatterplot(x = corModulTrait_66, y = virusAbundCor_66, main = "Viral abundance predicts varroa-virus interaction", xlab = "Correlation of viral interaction with varroa modules", ylab = "Correlation of viral abundances", abline = T, abline.color = "black")
 ```
 
 ### Plot specific virus-virus-module interactions 
@@ -458,9 +419,16 @@ viruses_load <- b_viruses_load %>%
 # make a new table with SRAs as rows, and viral loads and modules in the columns:
 dat <- left_join(viruses_load, Modules, by = "library") 
 
-# now plot each of the significant interactions of virus-virus-module
+# take out 6 male libraries:
+x <- dat %>%
+  dplyr::filter(!(library %in% c("SRR5760848","SRR5760838", "SRR5760828", "SRR5760818", "SRR5377266", "SRR5377265"))) 
 
-# (1) Module 3 (Brown module) positively correlates to ARV_2, VOV_1. the 2 viruses are positively correlated. 
+
+# now plot each of the significant interactions of virus-virus-module
+```
+#### (1) Module 3 (Brown module) positively correlates to ARV_2, VOV_1 (all 66 libraries)
+```{r eval=F, echo=T}
+# Module 3 (Brown module) positively correlates to ARV_2, VOV_1. the 2 viruses are positively correlated. 
 Brown <- dat %>%
   dplyr::select(c("library","MEbrown", "ARV_2", "VOV_1")) %>%
   pivot_longer(cols = c(ARV_2, VOV_1),
@@ -472,40 +440,85 @@ pBr_virus <- ggplot(Brown,aes(x = MEbrown, y = load, col = virus, group = virus)
   labs( x = "Module 3 eigengenes", y = "Viral load",
 title ="Module 3 - ARV_2 and VOV_1 interaction") +
   theme_bw() +
+  geom_text(label= dat$library, check_overlap = T)+
 stat_cor(aes(color = virus))+
-    geom_smooth(method = "lm", se=FALSE) 
+    geom_smooth(method = "lm", se=T, col = "black") 
 
-pBr_ARV_2 <- ggplot(dat,aes(x = MEbrown, y = ARV_2)) +
+pBr_ARV_2 <- ggplot(dat,aes(x = MEbrown, y =ARV_2)) +
   geom_point() + 
+  geom_text(label= dat$library, check_overlap = T)+
   labs( x = "Module 3 eigengenes", y = "ARV_2 load",
 title ="ARV_2 load - Module 3 interaction") +
-  theme_bw() +
+  theme_classic() +
 stat_cor()+
-    geom_smooth(method = "lm", se=FALSE) 
+    geom_smooth(method = "lm", se=T, col = "black") 
 
 pBr_VOV_1 <- ggplot(dat,aes(x = MEbrown, y = VOV_1)) +
   geom_point() + 
+  geom_text(label= dat$library,check_overlap = T)+
   labs( x = "Module 3 eigengenes", y = "VOV_1 load",
 title ="VOV_1 load - Module 3 interaction") +
-  theme_bw() +
+  theme_classic() +
 stat_cor()+
-    geom_smooth(method = "lm", se=FALSE) 
+    geom_smooth(method = "lm", se=T, col = "black") 
 
 # and the viruses against each other
 pARV_2_VOV <- ggplot(dat,aes(x = ARV_2, y = VOV_1)) +
   geom_point() + 
+  geom_text(label= dat$library,check_overlap = T)+
   labs( x = "ARV_2 load", y = "VOV_1 load",
 title ="ARV_2 - VOV_1 viral load interaction") +
-  theme_bw() +
+  theme_classic() +
 stat_cor()+
-    geom_smooth(method = "lm", se=FALSE, col = "black") 
+    geom_smooth(method = "lm", se=T, col = "#23A242") 
 
 # plot the all viruses with module 13 
 grid.arrange(pARV_2_VOV, pBr_virus, nrow = 1)
 
 grid.arrange(pARV_2_VOV,pBr_VOV_1, pBr_ARV_2 ,nrow = 1)
+grid.arrange(pBr_VOV_1, pBr_ARV_2 ,nrow = 1)
+```
 
-#####################
+#### (1) Module 3 (Brown module) positively correlates to ARV_2, VOV_1 (excluding ,male libraries)
+```{r eval=F, echo=T}
+# Module 3 (Brown module) positively correlates to ARV_2, VOV_1. the 2 viruses are positively correlated. 
+pBr_ARV_2 <- ggplot(x,aes(x = MEbrown, y =ARV_2)) +
+  geom_point() + 
+  geom_text(label= x$library, check_overlap = T)+
+  labs( x = "Module 3 eigengenes", y = "ARV_2 load",
+title ="ARV_2 load - Module 3 interaction") +
+  theme_classic() +
+stat_cor()+
+    geom_smooth(method = "lm", se=T, col = "black") 
+
+pBr_VOV_1 <- ggplot(x,aes(x = MEbrown, y = VOV_1)) +
+  geom_point() + 
+  geom_text(label= x$library, check_overlap = T)+
+  labs( x = "Module 3 eigengenes", y = "VOV_1 load",
+title ="VOV_1 load - Module 3 interaction") +
+  theme_classic() +
+stat_cor()+
+    geom_smooth(method = "lm", se=T, col = "black") 
+
+# and the viruses against each other
+pARV_2_VOV <- ggplot(x,aes(x = ARV_2, y = VOV_1)) +
+  geom_point() + 
+  geom_text(label= x$library,check_overlap = T)+
+  labs( x = "ARV_2 load", y = "VOV_1 load",
+title ="ARV_2 - VOV_1 viral load interaction") +
+  theme_classic() +
+stat_cor()+
+    geom_smooth(method = "lm", se=T, col = "#23A242") 
+
+# plot the all viruses with module 13 
+grid.arrange(pARV_2_VOV, pBr_virus, nrow = 1)
+
+grid.arrange(pARV_2_VOV,pBr_VOV_1, pBr_ARV_2 ,nrow = 1)
+grid.arrange(pBr_VOV_1, pBr_ARV_2 ,nrow = 1)
+```
+
+#### (2) module 13 (salmon) negatively correlate to viruses DWVa, DWVc, BQCV, VDV3. 
+```{r}
 # (2) module 13 (salmon) negatively correlate to viruses DWVa, DWVc, BQCV, VDV3. all four viruses are positivley correlated.
 Salmon <- dat %>%
   dplyr::select(c("library","MEsalmon", "DWVc", "BQCV", "VDV3")) %>%
@@ -521,9 +534,7 @@ title ="Interaction between Module 13 and viruses (DWVc, BQCV, VDV3)") +
 stat_cor(aes(color = virus)) +
     geom_smooth(method = "lm", se=FALSE) 
 
-
-##################
-# plot each virus separately
+##### plot each virus separately
 pSal_BQCV <- ggplot(dat,aes(x = MEsalmon, y = BQCV)) +
   geom_point() + 
   labs( x = "Module 13 eigengenes", y = "BQCV load",
@@ -564,7 +575,9 @@ ggpairs(dat, columns = c("DWVa","DWVc", "BQCV", "VDV3"),
         lower = list(continuous = wrap("smooth", size=1.5, se=FALSE))) +
             labs(title ="Viruses DWVa, DWVc, BQCV and VDV3 positively interacting with each other") +
             theme_bw() 
-#################
+```
+#### (3) module 9 (magenta) and 6 (red) are positively correlated to viruses VDV2 and VDV4. 
+```{r}
 # (3) module 9 (magenta) and 6 (red) are positively correlated to viruses VDV2 and VDV4. the two viruses are positively correlated.
 pMag_VDV2 <- ggplot(dat,aes(x = MEmagenta, y = VDV2)) +
   geom_point() + 
@@ -574,7 +587,7 @@ title ="VDV2 load - Module 9 interaction") +
 stat_cor()+
     geom_smooth(method = "lm", se=FALSE)
 
-pMag_VDV4 <- ggplot(dat,aes(x = MEmagenta, y = VDV4)) +
+pMag_VDV4 <- ggplot(dat,aes(x = MEmagenta, y = log(VDV4+0.01))) +
   geom_point() + 
   labs( x = "Module 9 eigengenes", y = "VDV4 load",
 title ="VDV4 - Module 9 interaction") +
@@ -590,7 +603,7 @@ title ="VDV2 load - Module 6 interaction") +
 stat_cor()+
     geom_smooth(method = "lm", se=FALSE)
 
-pRed_VDV4 <- ggplot(dat,aes(x = MEred, y = VDV4)) +
+pRed_VDV4 <- ggplot(dat,aes(x = MEred, y = log(VDV4+0.01))) +
   geom_point() + 
   labs( x = "Module 6 eigengenes", y = "VDV4 load",
 title ="VDV4 load - Module 6 interaction") +
@@ -598,20 +611,19 @@ title ="VDV4 load - Module 6 interaction") +
 stat_cor()+
     geom_smooth(method = "lm", se=FALSE)
 
-pVDV2_VDV4 <- ggplot(dat,aes(x = VDV2, y = VDV4)) +
+pVDV2_VDV4 <- ggplot(dat,aes(x = VDV2, y = log(VDV4+0.01))) +
   geom_point() + 
   labs( x = "VDV2 load", y = "VDV4 load",
 title ="VDV2 - VDV4 viral load interaction") +
   theme_bw() +
 stat_cor()+
-    geom_smooth(method = "lm", se=FALSE,  col = "black")
+    geom_smooth(method = "lm", se=FALSE,  col = "purple")
 
 pVDV2_VDV4
-grid.arrange(pMag_VDV2,  pRed_VDV2,pRed_VDV4 ,pMag_VDV4, nrow = 2, ncol = 2)
+grid.arrange(pMag_VDV2, pMag_VDV4,pRed_VDV4 ,pRed_VDV2, nrow = 2, ncol = 2)
 
-###################
+
 #plotting the viruses together:
-
 Magenta <- dat %>%
   dplyr::select(c("library","MEmagenta", "VDV4", "VDV2")) %>%
   pivot_longer(cols = c(VDV4, VDV2),
@@ -638,13 +650,8 @@ title ="Module 6 - VDV2, VDV4 interaction") +
 stat_cor(aes(color = virus)) +
     geom_smooth(method = "lm", se=FALSE) 
 
-
 # plot the VDV2 and VDV4 together
 grid.arrange(pRed, pMag, nrow = 1)
-
-
-
-
 ```
 
 
