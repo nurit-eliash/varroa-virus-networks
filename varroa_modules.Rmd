@@ -66,10 +66,10 @@ varroa_isoforms <- read_tsv("/Users/nuriteliash/Documents/GitHub/varroa-virus-ne
 #import the SRR libraries with tpms
 df <- read_rds("/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/data/kallisto.rds")
 
-#join the varroa trascnripts(varroa_isoforms), and the library tpm (df), by the varroa genes ("traget_id")
+#join the varroa transcripts (varroa_isoforms), and the library tpm (df), by the varroa reads ("target_id"). As we do "left_join" to create the final data frame of"gene_tpm" contain ONLY varroa genes, excluding viruses' tpm. 
 gene_tpm <-  left_join(varroa_isoforms, df, by = "target_id")
 
-#collapse isoforms to a single row of a gene, and sum the tpm(s) per gene per library
+#collapse isoforms ("target_id") to a single row of a gene ("gene_id"), and sum the tpm(s) per gene per library
 gene_tpm_collps <- gene_tpm %>% gather("library","tpm", -target_id, -gene_id) %>%
   group_by(gene_id, library) %>% summarise(gene_tpm = sum(tpm))
 
@@ -90,14 +90,55 @@ load("/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/resul
 #transpose final_gene_tpm, and transform (log10+0.000001) 
 final_gene_tpm_T<- transposeBigData(log10(final_gene_tpm + 0.000001))
 
-#plot PCA, detect outlier libraries
-autoplot(prcomp(final_gene_tpm_T), label = TRUE)+
-  ggtitle("PCA of 66 libraries based on gene expression and viral load")
+# load the libraries properties 
+libs_factors <- read_csv("/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/data/module_trait_factors.csv")
+# add the factors to each library by joining "libs_factors" with "final_gene_tpm_T"
+tpm_66 <- final_gene_tpm_T %>%
+  rownames_to_column("Library") 
 
-#remove outlier libraries (by col)
+data_66 <- left_join(tpm_66,libs_factors, by = "Library") %>%
+  column_to_rownames("Library")
+
+PCA_66 <- prcomp(final_gene_tpm_T)
+
+# to avoid incompatibility between ggplot2 and autoplot ,
+#dev.off(), 
+# or clean the plots window
+
+#plot PCA, color coded by "mite_stage"
+p1<- autoplot(PCA_66, label = TRUE, x = 1, y = 2, data = data_66, colour = 'mite_stage')+
+  ggtitle("PCA of 66 libraries based on gene expression")
+
+#plot PCA, color coded by "mite species"
+p2<- autoplot(PCA_66, label = TRUE, x = 1, y = 2, data = data_66, colour = 'mite_sp')+
+  ggtitle("PCA of 66 libraries based on gene expression")
+
+#plot PCA, color coded by "host (bee) species"
+p3<- autoplot(PCA_66, label = TRUE, x = 1, y = 2, data = data_66, colour = 'bee_sp')+
+  ggtitle("PCA of 66 libraries based on gene expression")
+
+#plot PCA, color coded by collection method
+p4<- autoplot(PCA_66, label = TRUE, x = 1, y = 2, data = data_66, colour = 'collec_method')+
+  ggtitle("PCA of 66 libraries based on gene expression")
+
+#plot PCA, color coded by library selection method
+p5<- autoplot(PCA_66, label = TRUE, x = 1, y = 2, data = data_66, colour = 'Lib_select')+
+  ggtitle("PCA of 66 libraries based on gene expression")
+
+#plot PCA, color coded by library treatment method
+p6<- autoplot(PCA_66, label = TRUE, x = 1, y = 2, data = data_66, colour = 'Lib_treat')+
+  ggtitle("PCA of 66 libraries based on gene expression")
+
+#plot PCA, color coded by study
+p7<- autoplot(PCA_66, label = TRUE, x = 1, y = 2, data = data_66, colour = 'study')+
+  ggtitle("PCA of 66 libraries based on gene expression")
+
+grid.arrange(p1,p2,p3,p4,p5,p6,p7,nrow = 3, ncol = 3)
+
+
+#remove outlier libraries (by col) - no need to do this step as i removed these 5 libs form the kalisto folder
 for_modules <- final_gene_tpm %>% transposeBigData() 
-#%>% dplyr::select(-c("SRR5109825", "SRR5109827", "SRR533974" , "SRR3927496", "SRR8867385")) 
-  
+#%>% dplyr::select(-c("SRR5109825", "SRR5109827", "SRR533974" , "SRR3927496", "SRR8867385"))
 
 saveRDS(for_modules, file = "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/for_modules.rds")
 
@@ -253,10 +294,6 @@ b_viruses_load <- viruses_load %>%
 
 # The last step is to save the relevant expression and trait data for use in the next steps 
 
-# the varroa modules with the 'viralTraits' (total load and diversity)- 
-#chagne this fuke name to "1" or "2" once the viruse diversity will be reayd
-#save(for_modules, viralTraits, file = "varroa_virus-01-dataInput.RData")
-
 # the varroa modules with the 'viruses load' (15 viruses)
 save(for_modules, b_viruses_load, file = "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/varroa_virus-01-dataInput.RData")
 
@@ -329,6 +366,7 @@ par(mar = c(6, 8.5, 3, 3));
 labeledHeatmap(Matrix = moduleTraitCor_66,
                xLabels = names(b_viruses_load),
                yLabels = names(MEs),
+               #xLabelsAngle = 90,
                ySymbols = names(MEs),
                colorLabels = FALSE,
                colors = hcl.colors(n = 50, palette = "RdBu", alpha = NULL, rev = FALSE, fixup = TRUE),
@@ -357,6 +395,7 @@ par(mar = c(6, 8.5, 3, 3));
 # Display the correlation values within a heatmap plot
 labeledHeatmap(Matrix = moduleTraitCor_66,
                xLabels = names(b_viruses_load),
+               xLabelsAngle = 90,
                yLabels = names(MEs),
                ySymbols = names(MEs),
                colorLabels = FALSE,
@@ -579,49 +618,48 @@ ggpairs(dat, columns = c("DWVa","DWVc", "BQCV", "VDV3"),
 #### (3) module 9 (magenta) and 6 (red) are positively correlated to viruses VDV2 and VDV4. 
 ```{r}
 # (3) module 9 (magenta) and 6 (red) are positively correlated to viruses VDV2 and VDV4. the two viruses are positively correlated.
-pMag_VDV2 <- ggplot(dat,aes(x = MEmagenta, y = VDV2)) +
+pMag_VDV2 <- ggplot(dat,aes(x = MEmagenta, y = log(VDV2+0.1))) +
   geom_point() + 
-  labs( x = "Module 9 eigengenes", y = "VDV2 load",
-title ="VDV2 load - Module 9 interaction") +
-  theme_bw() +
-stat_cor()+
-    geom_smooth(method = "lm", se=FALSE)
+  labs( x = "Module 9 eigengenes", y = "VDV2 load (logTPM)", title ="VDV2 load - Module 9 interaction") +
+  theme_classic() +
+  stat_cor() +
+  geom_smooth(method = "lm", se=FALSE)+
+  theme(title = element_blank())
 
-pMag_VDV4 <- ggplot(dat,aes(x = MEmagenta, y = log(VDV4+0.01))) +
+pMag_VDV4 <- ggplot(dat,aes(x = MEmagenta, y = log(VDV4+0.1))) +
   geom_point() + 
-  labs( x = "Module 9 eigengenes", y = "VDV4 load",
-title ="VDV4 - Module 9 interaction") +
-  theme_bw() +
-stat_cor()+
-    geom_smooth(method = "lm", se=FALSE)
+  labs( x = "Module 9 eigengenes", y = "VDV4 load (logTPM)", title ="VDV4 - Module 9 interaction") +
+  theme_classic() +
+  stat_cor() +
+  geom_smooth(method = "lm", se=FALSE)+
+  theme(title = element_blank())
 
-pRed_VDV2 <- ggplot(dat,aes(x = MEred, y = VDV2)) +
+pRed_VDV2 <- ggplot(dat,aes(x = MEred, y = log(VDV2+0.1))) +
   geom_point() + 
-  labs( x = "Module 6 eigengenes", y = "VDV2 load",
-title ="VDV2 load - Module 6 interaction") +
-  theme_bw() +
-stat_cor()+
-    geom_smooth(method = "lm", se=FALSE)
+  labs( x = "Module 6 eigengenes", y = "VDV2 load (logTPM)", title ="VDV2 load - Module 6 interaction") +
+  theme_classic() +
+  stat_cor() +
+  geom_smooth(method = "lm", se=FALSE) +
+  theme(title = element_blank())
 
-pRed_VDV4 <- ggplot(dat,aes(x = MEred, y = log(VDV4+0.01))) +
+pRed_VDV4 <- ggplot(dat,aes(x = MEred, y = log(VDV4+0.1))) +
   geom_point() + 
-  labs( x = "Module 6 eigengenes", y = "VDV4 load",
-title ="VDV4 load - Module 6 interaction") +
-  theme_bw() +
-stat_cor()+
-    geom_smooth(method = "lm", se=FALSE)
+  labs( x = "Module 6 eigengenes", y = "VDV4 load (logTPM)", title ="VDV4 logload - Module 6 interaction") +
+  theme_classic() +
+  stat_cor() +
+  geom_smooth(method = "lm", se=FALSE) +
+  theme(title = element_blank())
 
-pVDV2_VDV4 <- ggplot(dat,aes(x = VDV2, y = log(VDV4+0.01))) +
+pVDV2_VDV4 <- ggplot(dat,aes(x = log(VDV4+0.1), y = log(VDV2+0.1))) +
   geom_point() + 
-  labs( x = "VDV2 load", y = "VDV4 load",
-title ="VDV2 - VDV4 viral load interaction") +
-  theme_bw() +
-stat_cor()+
-    geom_smooth(method = "lm", se=FALSE,  col = "purple")
+  labs( x = "VDV4 load (logTPM)", y = "VDV2 load (logTPM)", title ="VDV2 - VDV4 viral load interaction") +
+  theme_classic() +
+  stat_cor(size=7) +
+  geom_smooth(method = "lm", se=FALSE, color = "#23A242", size=3) +
+  theme(text = element_text(size=20))
 
 pVDV2_VDV4
-grid.arrange(pMag_VDV2, pMag_VDV4,pRed_VDV4 ,pRed_VDV2, nrow = 2, ncol = 2)
-
+grid.arrange(pRed_VDV2, pMag_VDV2, pRed_VDV4, pMag_VDV4, nrow = 2, ncol = 2)
 
 #plotting the viruses together:
 Magenta <- dat %>%
@@ -629,12 +667,16 @@ Magenta <- dat %>%
   pivot_longer(cols = c(VDV4, VDV2),
                            names_to = "virus", values_to = "load")
 Red <- dat %>%
-  dplyr::select(c("library","MEred", "VDV4", "VDV2")) %>%
-  pivot_longer(cols = c(VDV4, VDV2),
-                           names_to = "virus", values_to = "load")
+  dplyr::select(c("library","MEred", "MEmagenta", "VDV4", "VDV2")) %>%
+  pivot_longer(cols = c(VDV4, VDV2), names_to = "virus", values_to = "load")
+
+Mod <- dat %>%
+  dplyr::select(c("library","MEred", "MEmagenta", "VDV4", "VDV2")) %>%
+  pivot_longer(cols = c(VDV4, VDV2), names_to = "virus", values_to = "load") %>%
+  pivot_longer(cols = c(MEmagenta, MEred), names_to = "module", values_to = "tpm")
 
 # and plot the eigengenes against the viral load
-pMag <- ggplot(Magenta,aes(x = MEmagenta, y = load, col = virus, group = virus)) +
+pMag <- ggplot(Magenta,aes(x = MEmagenta, y = log(load+0.01), col = virus, group = virus)) +
   geom_point() + 
   labs( x = "Module 9 eigengenes", y = "Viral load",
 title ="Module 9 - VDV2, VDV4 interaction") +
@@ -642,16 +684,51 @@ title ="Module 9 - VDV2, VDV4 interaction") +
 stat_cor(aes(color = virus))+
     geom_smooth(method = "lm", se=FALSE) 
 
-pRed <- ggplot(Red,aes(x = MEred, y = load, col = virus, group = virus)) +
+pRed <- ggplot(Red,aes(x = MEred, y = log(load+0.01), col = virus, group = virus)) +
   geom_point() + 
-  labs( x = "Module 6 eigengenes", y = "Viral load",
-title ="Module 6 - VDV2, VDV4 interaction") +
+  labs( x = "Module 6 eigengenes", y = "Viral load",title ="Module 6 - VDV2, VDV4 interaction") +
   theme_bw() +
-stat_cor(aes(color = virus)) +
-    geom_smooth(method = "lm", se=FALSE) 
+  stat_cor(aes(color = virus)) +
+  geom_smooth(method = "lm", se=FALSE) 
+
+# another option with log(tpm+0.01)
+pVDV2Log <- ggplot(filter(Mod, virus == "VDV2"),aes(x = log(load+0.01), y = tpm, col = module, group = module)) +
+  geom_point() + 
+  labs(x = "VDV2 load (logTPM)", y = "Module eigengenes", title ="VDV2 interaction with modules eigengenes") +
+  theme_bw() +
+  stat_cor(aes(color = module)) +
+  geom_smooth(method = "lm", se=FALSE) 
+
+pVDV4Log <- ggplot(filter(Mod, virus == "VDV4"),aes(x = log(load+0.01), y = tpm, col = module, group = module)) +
+  geom_point() + 
+  labs(x = "VDV4 load (logTPM)", y = "Module eigengenes", title ="VDV4 interaction with modules eigengenes") +
+  theme_bw() +
+  stat_cor(aes(color = module)) +
+  geom_smooth(method = "lm", se=FALSE)
+
+# plot the VDV2 and VDV4 together - (logTPM)
+grid.arrange(pVDV2Log, pVDV4Log, nrow = 1)
+
+
+
+
+# another option -no log
+pVDV2 <- ggplot(filter(Mod, virus == "VDV2"),aes(x = load, y = tpm, col = module, group = module)) +
+  geom_point() + 
+  labs(x = "VDV2 load", y = "Module eigengenes", title ="VDV2 interaction with modules eigengenes") +
+  theme_bw() +
+  stat_cor(aes(color = module)) +
+  geom_smooth(method = "lm", se=FALSE) 
+
+pVDV4 <- ggplot(filter(Mod, virus == "VDV4"),aes(x = load, y = tpm, col = module, group = module)) +
+  geom_point() + 
+  labs(x = "VDV4 load", y = "Module eigengenes", title ="VDV4 interaction with modules eigengenes") +
+  theme_bw() +
+  stat_cor(aes(color = module)) +
+  geom_smooth(method = "lm", se=FALSE)
 
 # plot the VDV2 and VDV4 together
-grid.arrange(pRed, pMag, nrow = 1)
+grid.arrange(pVDV2, pVDV4, nrow = 1)
 ```
 
 

@@ -6,7 +6,7 @@ output: html_document
 editor_options: 
   chunk_output_type: console
 ---
-this analysis starts with the 66 libraries (i removed the 5 outlirered libraries from the "data/kallisto" folder in GitHub, however they still exsist in the local folder: "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/data/kallisto.rds".
+this analysis is for the 57 adult female libraries (i removed the 5 outlire libraries from the "data/kallisto" folder in GitHub, however they still exsist in the local folder: "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/data/kallisto.rds".
 the working directory is in GitHb:
 "/Users/nuriteliash/Documents/GitHub/varroa-virus-networks"
 
@@ -52,16 +52,17 @@ library(cluster)
 ```{r }
 setwd("/Users/nuriteliash/Documents/GitHub/varroa-virus-networks")
 
-# Load all 71 libraries with all varroa genes and viruses
+# Load all 66 libraries with all varroa genes
 load(file = "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/gene_tpm.RData")
 
-final_gene_tpm  
+#transpose final_gene_tpm, and transform (log10+0.000001) 
+final_gene_tpm_T<- log10(final_gene_tpm + 0.000001)
 
 #remove libraries (by col):
-# 5 outlier libraries ("SRR5109825", "SRR5109827", "SRR533974" , "SRR3927496", "SRR8867385")
+# 5 outlier libraries ("SRR5109825", "SRR5109827", "SRR533974" , "SRR3927496", "SRR8867385") - already removed from kallisto folder.
 # and 9 non-adult female libraries (SRR5760848, SRR5760838, SRR5760828, SRR5760818, SRR5377265 ,SRR5377270 ,SRR5377269 ,SRR5377263 ,SRR5377266)
 # we are left with 57 libraries of female mites. 
-for_modules_female <- final_gene_tpm %>%   
+for_modules_female <- final_gene_tpm_T %>%   
   dplyr::select(-c("SRR5760848", "SRR5760838", "SRR5760828", "SRR5760818", "SRR5377265" ,"SRR5377270" ,"SRR5377269" ,"SRR5377263" ,"SRR5377266")) %>%
   transposeBigData()
 
@@ -89,10 +90,8 @@ setwd("/Users/nuriteliash/Documents/GitHub/varroa-virus-networks")
 # Display the current working directory
 getwd()
 
-
 # Allow multi-threading within WGCNA. This helps speed up certain calculations.
 options(stringsAsFactors = FALSE)
-
 ```
 ### 2.a.1 Choosing the soft-thresholding power: analysis of network topology
 ```{r}
@@ -126,10 +125,10 @@ text(sft$fitIndices[,1], sft$fitIndices[,5], labels=powers, cex=cex1,col="red")
 ```
 
 ### Constructing the gene network and identifying modules is now a simple function call:
-the aim of analyzing only female modules is to find matching modules between the 66 lib (containing all mites), and the 57 libs (excluding male libs).
-as we wish to generalize our anlaysis conclusions to all mites, we aim to detect specific genes that are important in both types of analysis (66 libs and 57 libs)
+the aim of analyzing only female modules is to find matching modules between the 66 lib (containing all mites), and the 57 libs (excluding male, nymph and egg libs).
+as we wish to generalize our analysis conclusions to all mites, we aim to detect specific genes that are important in both types of analysis (66 libs and 57 libs)
 for that, we will construct networks from 57 libs, aiming to have about the same number of modules, in both WGCNAs. 
-playing with the "mergeCutHeight" value, i find that "mergeCutHeight = 0.22" gives 14 modules, the same as in the 66 libs, with "mergeCutHeight = 0.25". 
+playing with the "mergeCutHeight" value, i find that "mergeCutHeight = 0.22" gives 16 modules, similar as in the 66 libs, with "mergeCutHeight = 0.25". 
 we therefore set the mergeCutHeight = 0.22, and the power = 10.
 ```{r}
 #=====================================================================================
@@ -139,8 +138,8 @@ we therefore set the mergeCutHeight = 0.22, and the power = 10.
 #=====================================================================================
 
 net = blockwiseModules(for_modules_female, power = 10,
-                       TOMType = "signed", minModuleSize = 30,
-                       reassignThreshold = 0, mergeCutHeight = 0.,
+                       TOMType = "unsigned", minModuleSize = 30,
+                       reassignThreshold = 0, mergeCutHeight = 0.22,
                        numericLabels = TRUE, pamRespectsDendro = FALSE,
                        saveTOMs = TRUE,
                        saveTOMFileBase = "Varroa_modulesTOM", 
@@ -191,7 +190,6 @@ save(MEs_57, moduleLabels_57, moduleColors_57, geneTree_57,
 prepare the "virus load" table (like the "clinicalTraits.csv") of virus variables you wish to correlate to varroa modules
 ```{r}
 viruses_load <- read_rds("/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/viruses_load.RData")
-
 viruses_load 
 
 #make a viruses load file with the 15 viruses, and 57 libs:
@@ -213,14 +211,10 @@ save(for_modules_female, b_viruses_load_57, file = "/Users/nuriteliash/OneDrive 
 ```{r}
 #if you are starting from here,  
 # Load the expression and trait data saved in the first part 
-lnames <- load(file = "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/varroa_virus-01-dataInput_57.RData"); 
-
-#The variable lnames contains the names of loaded variables. 
-lnames 
+load(file = "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/varroa_virus-01-dataInput_57.RData"); 
 
 # Load network data saved in the second part.
-lnames = load(file = "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/Varroa_modules_networkConstruction-auto_57.RData"); 
-lnames
+load(file = "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/Varroa_modules_networkConstruction-auto_57.RData"); 
 
 # Define numbers of genes and samples
 nGenes = ncol(for_modules_female);
@@ -229,14 +223,14 @@ nSamples = nrow(for_modules_female);
 MEs0 = moduleEigengenes(for_modules_female, moduleColors_57)$eigengenes
 MEs_57 = orderMEs(MEs0)
 
-moduleTraitCor = cor(MEs_57, b_viruses_load_57, use = "p");
-moduleTraitPvalue = corPvalueStudent(moduleTraitCor, nSamples)
+moduleTraitCor_57 = cor(MEs_57, b_viruses_load_57, use = "p");
+moduleTraitPvalue_57 = corPvalueStudent(moduleTraitCor_57, nSamples)
 
 ### Controlling the false discovery rate: Benjamini–Hochberg procedure ###
 # using p.adjust function, for all comparisons, 15 modules and 15 viruses (m=225). 
 
 # first make the p-value matrix into a dataframe
-moduleTraitPvalue_0 <- as.data.frame(moduleTraitPvalue)
+moduleTraitPvalue_0 <- as.data.frame(moduleTraitPvalue_57)
 
 # then "gather" all the p-values, so they will apear in one column
 longer_Pvalue <- moduleTraitPvalue_0 %>% 
@@ -250,15 +244,15 @@ Padjust <- p.adjust(longer_Pvalue$pvalue, method = "fdr")
 Padjust <- add_column(longer_Pvalue, Padjust)
 
 # now spread it back
-moduleTraitPadjust <- Padjust %>% 
+moduleTraitPadjust_57 <- Padjust %>% 
     dplyr::select(-pvalue) %>% 
     group_by(virus) %>%
     pivot_wider(names_from = virus, values_from = Padjust)
-moduleTraitPadjust <- column_to_rownames(moduleTraitPadjust, "module")
+moduleTraitPadjust_57 <- column_to_rownames(moduleTraitPadjust_57, "module")
 
 # before correlating, make the two dataframes into "matrixes"
-moduleTraitCor_57 <- as.matrix(moduleTraitCor)
-moduleTraitPadjust_57 <- as.matrix(moduleTraitPadjust)
+moduleTraitCor_57 <- as.matrix(moduleTraitCor_57)
+moduleTraitPadjust_57 <- as.matrix(moduleTraitPadjust_57)
 
 # save the matrices for next analysis
 save(moduleTraitCor_57,moduleTraitPadjust_57, file = "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/moduleTraitCor_57.RData")
@@ -271,12 +265,10 @@ mantel.test: the corelation btw two matrices
 
 # load the two matrices, **of the 57 libs**:
 # the module–trait association matrix 
-names <- load(file = "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/moduleTraitCor_57.RData"); 
-names
+load(file = "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/moduleTraitCor_57.RData"); 
 
 # and the viral abundance correlogram
-names <- load(file = "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/virusAbundCor_57.RData"); 
-names
+load(file = "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/virusAbundCor_57.RData"); 
 
 # make correlation matrix of the "moduleTraitCor":
 corModulTrait_57 <- cor(moduleTraitCor_57)
@@ -290,35 +282,61 @@ mantel.test(corModulTrait_57, virusAbundCor_57, graph = TRUE,
   
 # (2) Mantel test using "vegan" library:
 mantel(corModulTrait_57, virusAbundCor_57, method="pearson", permutations=1000)
+
+#plot the correlation
+verboseScatterplot(x = virusAbundCor_57, y = corModulTrait_57, main = "Viral abundance predicts varroa-virus interaction (female libs)", xlab = "Viruses interaction", ylab = "Varroa-virus interaction", abline = T, abline.color = "black")
 ```
 
 ###WGCNA 3.a Quantifying module–trait associations
 ```{r}
 sizeGrWindow(10,6)
 # Will display correlations and their p-values
-textMatrix = paste(signif(moduleTraitCor, 2), "\n(",
-signif(moduleTraitPadjust, 1), ")", sep = "");
-dim(textMatrix) = dim(moduleTraitCor)
+textMatrix = paste(signif(moduleTraitCor_57, 2), "\n(",
+                  signif(moduleTraitPadjust_57, 1), ")", sep = "");
+dim(textMatrix) = dim(moduleTraitCor_57)
 par(mar = c(6, 8.5, 3, 3));
 # Display the correlation values within a heatmap plot
-labeledHeatmap(Matrix = moduleTraitCor,
+labeledHeatmap(Matrix = moduleTraitCor_57,
 xLabels = names(b_viruses_load_57),
+#xLabelsAngle = 90,
 yLabels = names(MEs_57),
 ySymbols = names(MEs_57),
 colorLabels = FALSE,
-colors = blueWhiteRed(50),
+colors = hcl.colors(n = 50, palette = "RdBu", alpha = NULL, rev = FALSE, fixup = TRUE),
 textMatrix = textMatrix,
+invertColors = TRUE,
 setStdMargins = FALSE,
 cex.text = 0.7,
 zlim = c(-1,1),
-main = paste("adult female Module-viruses relationships"))
+main = paste("Adult female Module-viruses relationships"))
+
+# or plot it in a "clean" mode
+sizeGrWindow(10,6)
+# Will display correlations and their p-values
+textMatrix = paste(signif(moduleTraitCor_57, 2), "\n(",
+                   signif(moduleTraitPadjust_57, 1), ")", sep = "");
+dim(textMatrix) = dim(moduleTraitCor_57)
+par(mar = c(6, 8.5, 3, 3));
+# Display the correlation values within a heatmap plot
+labeledHeatmap(Matrix = moduleTraitCor_57,
+               xLabels = names(b_viruses_load_57),
+               xLabelsAngle = 90,
+               yLabels = names(MEs_57),
+               ySymbols = names(MEs_57),
+               colorLabels = FALSE,
+               colors = hcl.colors(n = 50, palette = "RdBu", alpha = NULL, rev = FALSE, fixup = TRUE),
+               invertColors = TRUE,
+               #textMatrix = textMatrix,
+               setStdMargins = FALSE,
+               cex.text = 0.7,
+               zlim = c(-1,1),
+               main = paste("Adult female Module-viruses relationships"))
 ```
 
 ###hirarchial clustering 
 ```{r}
 #plot hirarchial clustering of the viruses, based to their correlation to the varroa modules.
-plot(hclust(dist(abs(transposeBigData(moduleTraitCor)))))
-
+plot(hclust(dist(abs(transposeBigData(moduleTraitCor_57)))))
 ```
 
 We quantify associations of individual genes with our trait of interest (total_load ) by defining Gene Significance GS as (the absolute value of) the correlation between the gene and the trait. 
@@ -495,7 +513,6 @@ for (i in c(1:length(colorlevels)))
 datKME_57=signedKME(for_modules_female, MEs_57, outputColumnName="MM.")
 # Display the first few rows of the data frame
 head(datKME_57)
-
 #We have a module membership value for each gene in each module.
 ```
 

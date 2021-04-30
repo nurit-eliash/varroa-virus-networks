@@ -112,21 +112,22 @@ matching modules of the two analyses
 
 66 all libraries                  | 57 female libraries:
 ----------------------------------|---------------------------
-(module number 0)  MM.grey        | MM.grey (module number 0)
- (module number 1)  MM.turquoise  | MM.turquoise (module number 1)
- (module number 2)  MM.blue       | MM.turquoise (module number 1)
- (module number 3)  MM.brown      | MM.grey (module number 0)
- (module number 4)  MM.yellow     | MM.red (module number 6)
- (module number 5)  MM.green      | MM.blue (module number 2)
- (module number 6)  MM.red        | MM.black (module number 7)
- (module number 7)  MM.black      | MM.magenta (module number 9)
- (module number 8)  MM.pink       | MM.pink (module number 8)
- (module number 9)  MM.magenta    | MM.black (module number 7)
- (module number 10) MM.purple     | MM.salmon (module number 13)
- (module number 11) MM.greenyellow| MM.greenyellow (module number 11)
- (module number 12) MM.tan        | MM.pink (module number 8)ma
- (module number 13) MM.salmon     | MM.purple (module number 10)
- (module number 14) MM.cyan       | MM.magenta (module number 9)
+(module number 0)  MM.grey        | MM. (module number 0)
+(module number 1)  MM.turquoise   | MM.turquoise (module number 1)
+(module number 2)  MM.blue        | MM.red (module number 6)
+(module number 3)  MM.brown       | MM.grey (module number 0)
+(module number 4)  MM.yellow      | MM.black (module number 7)
+(module number 5)  MM.green       | MM.yellow (module number 4)
+(module number 6)  MM.red         | MM.brown (module number 3)
+(module number 7)  MM.black       | MM.grey (module number 0)
+(module number 8)  MM.pink        | MM.pink (module number 8)
+(module number 9)  MM.magenta     | MM.brown (module number 3)
+(module number 10) MM.purple      | MM.magenta (module number 9)
+(module number 11) MM.greenyellow | MM.pink (module number 8)
+(module number 12) MM.tan         | MM.pink (module number 8)
+(module number 13) MM.salmon      | MM.yellow (module number 4)
+(module number 14) MM.cyan        | MM.pink (module number 8)
+(module number 15) MM.midnightblue| MM.tan (module number 12)
 ---
 
 > Intersting modules:
