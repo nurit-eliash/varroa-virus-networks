@@ -89,7 +89,6 @@ head(genes.vd)
 params.vd <- GSEAGOHyperGParams(name = "Vd_GO_enrichment",
                                 geneSetCollection = gsc.vd,
                                 geneIds = genes.vd,
-                                # when im changing universeGeneIds = *NULL*, then i dont get the warning
                                 universeGeneIds = universe.vd,
                                 ontology = "BP", # change with MF, CC to test all
                                 pvalueCutoff = 0.05,
