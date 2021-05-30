@@ -1,0 +1,105 @@
+---
+title: "varroa RNAi genes"
+author: "Nurit Eliash"
+date: "5/10/2021"
+output: html_document
+---
+
+
+## Load data
+```{r setup, include=FALSE}
+# load the module network, gene expression and viral load data of the 66 libraries analysis:
+names <- load("/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/Varroa_modules_networkConstruction-auto.RData")
+names
+#load geneTraitSignificance (geneTraitSignificance), module membership (geneModuleMembership) and intramodular connectivity (Alldegrees1) for each gene:
+names <- load(file = "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/IntraModCon66.RData")
+names
+names <- load(file = "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/geneTraitANDgeneMM_66.RData")
+names
+#load the genes tpm per library, and viral load:
+names <- load(file = "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/varroa_virus-01-dataInput.RData")
+names
+#load the correlation data for the module-trait relationship:
+names <- load("/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/moduleTraitCor_66.RData")
+names
+
+# load the gene ID of the varroa RNAi-genes (based on Nganso et al. 2020)
+RNAi_genes <- read_csv("/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/data/varroa_RNAi.csv") 
+RNAi_genes$gene <- as.character(RNAi_genes$gene)
+```
+
+## Set working directory and other things
+```{r }
+setwd("/Users/nuriteliash/Documents/GitHub/varroa-virus-networks")
+
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Load libraries
+```{r }
+library("dplyr")
+library("tidyverse")
+library("vegan")
+library("DESeq2")
+library("ggfortify")
+library("WGCNA")
+library("rmarkdown")
+library("knitr") # for the markdown
+library("kableExtra") # for creating a scrolling table
+library("ggplot2") # for plotting 
+library("ape") # for reading the phylogenetic tree and for mantel.test
+library("Biostrings")
+library("ggtree") # for plotting the tree
+library("ggrepel") # for spreading text labels on the plot
+library("scales") # for axis labels notation
+library("GO.db")
+library("reshape2")
+library("RSQLite")
+library("AnnotationDbi")
+library("GSEABase")
+library("GOstats")
+library("maps") # for the map background
+library("leaflet") #for the interactive maps
+library("htmltools")
+library("rgdal")
+library("grid")
+library("gridExtra")
+library("GeneOverlap")
+library("cluster")
+library("ggpubr")
+library("GGally")
+```
+
+
+```{r}
+# make a dataframe with all genes and their info: module assignment, virus interaction, modules membership and Intramodule connectivity:
+geneInfo <- data.frame(
+  module = moduleColors,
+  geneTraitSignificance_66,
+  geneModuleMembership_66,
+  IntraModCon = Alldegrees1_66$kWithin) %>%
+  rownames_to_column("gene")
+
+# join the varroa RNAi-genes and the all "geneInfo" table
+RNAi <- inner_join(RNAi_genes, geneInfo, by = "gene")
+
+#plot the gene distribution according to module
+ggplot(RNAi, aes(module, fill = family)) + geom_bar() +
+  ggtitle("RNAi gene distribution to modules")
+
+# plot the gene interaction with the different viruses 
+
+
+RNAi_tpm <- for_modules %>%
+  rownames_to_column("library") 
+
+#load the viruses load, per library
+viruses_load <- b_viruses_load %>%
+  rownames_to_column("library") 
+
+# make a new table with SRAs as rows, and viral loads and modules in the columns:
+dat <- left_join(viruses_load, Modules, by = "library") 
+
+
+```
+
