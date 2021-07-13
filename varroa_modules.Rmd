@@ -442,8 +442,9 @@ mantel.test(corModulTrait_66, virusAbundCor_66, graph = TRUE,
 mantel(corModulTrait_66, virusAbundCor_66, method="pearson", permutations=1000)
 
 #plot the correlation
-verboseScatterplot(x = virusAbundCor_66, y = corModulTrait_66, main = "Viral abundance predicts varroa-virus interaction", xlab = "Viruses interaction", ylab = "Varroa-virus interaction", abline = T, abline.color = "black")
+verboseScatterplot(x = virusAbundCor_66, y = corModulTrait_66, main = "Viral abundance predicts varroa-virus interaction", xlab = "Viruses interaction", ylab = "Varroa-virus interaction", abline = T, abline.color = "black", bg = "black")
 
+# or flip the axis:
 verboseScatterplot(x = corModulTrait_66, y = virusAbundCor_66, main = "Viral abundance predicts varroa-virus interaction", xlab = "Correlation of viral interaction with varroa modules", ylab = "Correlation of viral abundances", abline = T, abline.color = "black")
 ```
 

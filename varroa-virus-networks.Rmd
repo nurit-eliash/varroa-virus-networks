@@ -161,13 +161,19 @@ biplot(virus_PCA)
 # plot the viruses abundance in each library
 # make a vector of the new viruses order
 
-new_order <- c("DWVa", "VDV1/DWVb", "VDV2", "BMV","VOV_1","ARV_2" , "DWVc", "AmFV", "VDV3", "ABPV", "VTLV", "SV", "BQCV","VDV4", "IAPV", "KBV", "SBPV", "LSV","CBPV" ,"AFV", "ANV", "VPVL_46","VPVL_36")
+new_order <- c("DWVa", "VDV1/DWVb", "VDV2", "BMV","VOV_1","ARV_2", "DWVc", "AmFV", "VDV3", "ABPV", "VTLV", "SV", "BQCV","VDV4", "IAPV", "KBV", "SBPV", "LSV","CBPV" ,"AFV", "ANV", "VPVL_46","VPVL_36")
 
-# re-order the viruses, based on viral load and viral abundance:
+# re-order the viruses, based on viral load and viral abundance, and change the names of the viruses:
 viruses_load_arranged <- viruses_load  %>%
   mutate(description =  factor(description, levels = new_order)) %>%
-  arrange(description) 
-  
+  arrange(description) %>%
+  mutate(across("description", str_replace, "VOV_1", "VOV-1")) %>%
+  mutate(across("description", str_replace, "ARV_2", "ARV-2")) %>%
+  mutate(across("description", str_replace, "SV", "SBV")) %>%
+  mutate(across("description", str_replace, "LSBV", "LSV")) 
+
+
+
 # lock in factor level order
 viruses_load_arranged$description <- factor(viruses_load_arranged$description, levels = viruses_load_arranged$description)
 
@@ -178,7 +184,7 @@ virus_abund <- viruses_load_arranged %>%
 virus_abund[, 3] <- (virus_abund[,3]+ 0.000001)
 virus_abund[, 3] <- log10(virus_abund[,3]) 
 virus_abund <- replace_with_na(virus_abund, replace = list(tpm = -6))
-  
+
 # now make a heat map
 ggplot(data = virus_abund, mapping = aes(x = description,
                                                        y = library,
@@ -188,11 +194,15 @@ ggplot(data = virus_abund, mapping = aes(x = description,
   theme_linedraw() +
   xlab(label = "Viruses") +
   ylab(label = "Varroa SRA libraries") +
-  labs(fill = "Viral load \n log(tpm)")  + 
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))  + 
-  theme(axis.ticks = element_blank())
+  labs(fill = "Viral load \n log10(TPM)") + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 12)) + 
+  theme(axis.ticks = element_blank()) +
+  theme(axis.title = element_text(size = 16)) 
 
-
+  theme(legend.position=c(0.9,0.975), legend.justification = c(1,1))
+  
+  
+                              
 
 # or use heatmap() function
 x <- viruses_load %>%
