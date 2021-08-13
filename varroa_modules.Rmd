@@ -227,14 +227,13 @@ text(sft$fitIndices[,1], sft$fitIndices[,5], labels=powers, cex=cex1,col="red")
 
 net = blockwiseModules(for_modules, power = 12,
                        TOMType = "unsigned", minModuleSize = 30,
-                       reassignThreshold = 0, mergeCutHeight = 0.25,
+                       reassignThreshold = 0, mergeCutHeight = 0.25, #0.25 means a correlation of 0.75
                        numericLabels = TRUE, pamRespectsDendro = FALSE,
                        saveTOMs = TRUE,
                        saveTOMFileBase = "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/Varroa_modulesTOM", 
                        verbose = 3)
 
-# To see how many modules were identified and what the module sizes are, one can use table(net$colors). Its output is 
-
+# To see how many modules were identified and what the module sizes are, one can use table(net$colors).
 table(net$colors)
 ```
 The hierarchical clustering dendrogram (tree) used for the module identification is returned in net$dendrograms[[1]];

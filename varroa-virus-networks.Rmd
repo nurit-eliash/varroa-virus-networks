@@ -1,5 +1,5 @@
 ---
-title: "varroa_virus_networks"
+title: "Varroa-virus meta-transcriptomic analysis"
 author: "Sasha Mikheyev and Nurit Eliash"
 date: "1/22/2020"
 output:
@@ -14,6 +14,9 @@ output:
 this analysis is on the 66 libraries (i removed the 5 outlirered libraries from the "data/kallisto" folder in GitHub)
 the working directory is in GitHb:
 "/Users/nuriteliash/Documents/GitHub/varroa-virus-networks"
+
+I save all the small outputs results in the "result" folder:
+"/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results"
 
 I save all the big outputs results in my local storage:
 "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results"
@@ -30,24 +33,22 @@ library("rmarkdown")
 library("knitr") # for the markdown
 library("kableExtra") # for creating a scrolling table
 library("ggplot2") # for plotting 
-library("ape") # for reading the phylogenetic tree and for mantel.test
+library("ape") # for mantel.test
 library("Biostrings")
-library("ggtree") # for plotting the tree
 library("ggrepel") # for spreading text labels on the plot
 library("scales") # for axis labels notation
-library("GO.db")
+library("GO.db") # for GO term annotation 
 library("reshape2")
 library("RSQLite")
-library("AnnotationDbi")
+library("AnnotationDbi") # for GO term annotation 
 library("GSEABase")
 library("GOstats")
 library("maps") # for the map background
-library("leaflet") #for the interactive maps
 library("htmltools")
 library("rgdal")
 library("grid")
 library("gridExtra")
-library("GeneOverlap")
+library("GeneOverlap") # for making the overlapping genes
 library("cluster")
 library("rmdformats")
 library("corrplot")
@@ -56,66 +57,107 @@ library("hrbrthemes")
 library("ggthemes")
 library("RColorBrewer")
 library("naniar")
-
-knitr::opts_chunk$set(echo = TRUE)
 ```
 
-# Gene network analysis
-A gene co-expression network identify genes that interact with one another based on common expression profiles (Barabási and Oltvai 2004). Groups of co-expressed genes that have similar expression patterns across samples are identified using hierarchical clustering and are placed in gene ‘modules’ (Miller, Horvath, and Geschwind 2010). 
-Weighted gene co-expression analysis was conducted using the WGCNA package in R (Langfelder and Horvath 2008).
+```{r}
+knitr::opts_chunk$set(echo = TRUE)
+setwd("/Users/nuriteliash/Documents/GitHub/varroa-virus-networks")
+```
+
+In this study we studied virus-virus and vector-virus interactions by two approaches: (1) meta-transcriptomic and (2) gene-silencing experiments. In the meta-transcriptomic analysis we looked at the overall viral landscape in the different libraries, detected vector modules (co-expressing genes using gene-network analysis), and correlated the viruses’ abundance to the vector modules. Last, we tested if the virus abundance matrix can predict the virus-vector interaction.
 
 ## Data selection
-We searched for “varroa” in the SRA databases (NCBI, January 2020) with the following filters:
+We searched for the term “varroa” in the SRA databases (NCBI, January 2020) with the following filters:
  *  _Source_: "RNA"
  *  _Library Strategy_: “RNA-seq” (Random sequencing of whole transcriptome)
  *  _Library Source_: “TRANSCRIPTOMIC”, “VIRAL RNA”
  *  Only whole mites (not partial organs)
+ 
+## Viral abundance analysis and filtering data set
 
-after filtering outlier libraries (based on PCA analysis), 
-we used a total of 66 SRAs belonging to 11 studies of varroa RNAseq for the network analysis (details of the final libraries available in Supp table 1)
+
+
 
 ## Load data 
 The input data frame "df" contains 35,669 isoforms of 66 varroa SRA libraries, downloaded from NCBI, using the 
 
-consisted of a regularized log transformed matrix of 18,313 genes (as columns) and 29 libraries (as rows) of the venom gland which was filtered for low expressed transcripts (tpm > 0.05). Pm_7 was excluded due to low spike-in (see methods)
-
-mapping RNAseq reads to viruses and varroa genes
+after mapping the RNAseq reads to viruses and varroa genes using kallisto (____ref___), we gonna read and save the mapped reads and their tpm
 ```{r eval=FALSE, message=FALSE, warning=FALSE, include=FALSE}
-setwd("/Users/nuriteliash/Documents/GitHub/varroa-virus-networks")
-
-# read the viruses IDs:
-# awk '$3=="mRNA"' GCF_002443255.1_Vdes_3.0_genomic.gff | perl -n -e 'print "$1\t$2\n" if /gene=LOC(\d+);.*transcript_id=(.*)/' | gzip >! gene2isoform.txt.gz
-virusId <- read_tsv("data/viruses.txt", col_names = c("target_id", "description"))
-# rename all 6 VOV_1 segemnts with the same name: "VOV_1"
-virusId[3:8, 2] <- "VOV_1"
-
-# map the Varroa and viruses' reads
-# first make a function for mapping the reads
+# First make a function for making the isoforms (mapped reads) into a data frame, where each column is a SAR library, and each row is an isoform. The cells contain the isoform TPM.  
 read_kallisto <- function(filename) {
   sampleName <- sub("data/kallisto/(.*).tsv.gz","\\1", filename)
   return(read_tsv(filename) %>%
            dplyr::select(!!sampleName := tpm))
 }
 
-# map the reads in the SRA libraries to varroa and viruses genomes 
-df <- list.files(path = "data/kallisto", full.names = TRUE) %>% 
+# now make the data frame 'df': 
+df_71 <- list.files(path = "data/kallisto", full.names = TRUE) %>% 
   lapply(read_kallisto) %>% 
   bind_cols() 
 
 # add a column "target_id" with the genes id
-df$target_id <- list.files(path = "data/kallisto", full.names = TRUE)[1] %>% 
+df_71$target_id <- list.files(path = "data/kallisto", full.names = TRUE)[1] %>% 
   read_tsv() %>% 
   dplyr::select(target_id) %>% 
   pull()
 
-# save the virus list and the isoform tpm as RDS 
-saveRDS(df, file = "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/data/kallisto.rds")
-saveRDS(virusId, file = "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/data/virusId.rds")
+# next, we want to join isoforms that belong to the same gene.
+# we import the varroa transcripts ("target_id") and their corresponding gene ("gene_id"). and add a col names.
+varroa_isoforms <- read_tsv("/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/data/gene2isoform.txt.gz", col_names = c("gene_id", "target_id"))
+
+# join the varroa transcripts (varroa_isoforms), and the library tpm (df), by the varroa reads ("target_id"). As we do "left_join" to create the final data frame of"gene_tpm" contain ONLY varroa genes, excluding viruses' tpm. 
+gene_tpm_71 <-  left_join(varroa_isoforms, df_71, by = "target_id")
+
+#collapse isoforms ("target_id") to a single row of a gene ("gene_id"), and sum the tpm(s) per gene per library
+gene_tpm_collps_71 <- gene_tpm_71 %>% 
+  gather("library","tpm", -target_id, -gene_id) %>%
+  group_by(gene_id, library) %>% 
+  summarise(gene_tpm_71 = sum(tpm)) 
+
+# spread the table again, by library
+final_gene_tpm_71 <- spread(gene_tpm_collps_71, key = "library", value = "gene_tpm_71") %>% column_to_rownames('gene_id')
+  
+# transpose final_gene_tpm, and transform (log10+0.000001) 
+final_gene_tpm_71_T<- transposeBigData(log10(final_gene_tpm_71 + 0.000001))
+
+PCA_71 <- prcomp(final_gene_tpm_71_T)
+p71 <- autoplot(PCA_71, label = TRUE, x = 1, y = 2)+
+  ggtitle("PCA of 71 libraries based on gene expression")
+
+# 5 libraries are obvious outliers:"SRR5109825", "SRR5109827", "SRR533974" , "SRR3927496", "SRR8867385".
+# when we remove them and repeat the PCA, the library scatter more homogenously:
+final_gene_tpm_66_T <- final_gene_tpm_71_T %>%
+  rownames_to_column("library") %>%
+  dplyr::filter(!(library %in% c("SRR5109825", "SRR5109827", "SRR533974" , "SRR3927496", "SRR8867385"))) %>% column_to_rownames("library")
+PCA_66 <- prcomp(final_gene_tpm_66_T)
+p66 <- autoplot(PCA_66, label = TRUE, x = 1, y = 2)+
+  ggtitle("PCA of 66 libraries based on gene expression")
+
+# plot the two PCA plots together:
+grid.arrange(p71,p66,nrow = 1, ncol = 2)
+
+# remove the 5 outlier libraries from the data frame, and save for all subsequent analyses 
+df <- df_71 %>% dplyr::select(-c("SRR5109825", "SRR5109827", "SRR533974" , "SRR3927496", "SRR8867385"))
 ```
+saveRDS(df, file = "/data/kallisto.rds")
+
+משום מה - הקוד לא מצליח לראו את כל הוירוסים, רק את הראשון 
+dwva
+
+
+After filtering outlier libraries (based on PCA analysis), we used a total of 66 SRAs belonging to 9 studies of varroa RNAseq for the network analysis (details of the final libraries available in table S5)
+
+
 
 ## AIM: describing viruses' abundance in the different varroa SRA libraries
 first make the suitable data frame containing virus load in each library
 ```{r first make the suitable data frame containing virus load in each library, message=FALSE, warning=FALSE}
+df_old<- read_rds("/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/data/kallisto.rds")
+# read the viruses IDs:
+virusId <- read_tsv("data/viruses.txt", col_names = c("target_id", "description"))
+# rename all 6 VOV_1 segemnts with the same name: "VOV_1"
+virusId[3:8, 2] <- "VOV_1"
+
 x <- left_join(virusId, df, by = "target_id") %>% dplyr::select(-target_id) 
   
 # VOV_1. virus genome has been described in 6 different segments (Levin et al. 2016). 
@@ -137,42 +179,44 @@ insertRow <- function(x, VOV_1, r) {
 
 viruses_load <- insertRow(x, VOV_1, r)
 head(viruses_load)
-saveRDS(viruses_load, file = "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/viruses_load.RData")
+
+# save the viral load 
+saveRDS(viruses_load, file = "/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/viruses_load.RData")
 ```
  
-### vizualize viruses distribution and abundance in (1)abundance plot; (2)PCA of viruses; (3)heat-map
+### Vizualize viruses distribution and abundance in (1)abundance plot; (2)PCA of viruses; (3)heat-map
 ```{r message=FALSE, warning=FALSE}
-df <- readRDS("/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/data/kallisto.rds")
-viruses_load <- readRDS(file = "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/viruses_load.RData")
+viruses_load <- readRDS(file = "/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/viruses_load.RData")
 
 # (1) virus abundance plot
 joined_virus_lib <- viruses_load %>% gather("library", "tpm", -description)
 
-ggplot(joined_virus_lib, aes(x= library, y = tpm, fill = description)) + geom_bar(stat = "identity") + theme(axis.text.x = element_text(angle = 90)) 
+pVirusAbund <- ggplot(joined_virus_lib, aes(x= library, y = tpm, fill = description)) + geom_bar(stat = "identity") + theme(axis.text.x = element_text(angle = 90)) 
 
 # (2) plot a PCA of viruses abundance 
 joined_virus_lib_PCA <- joined_virus_lib %>% group_by(description, library) %>% summarise(tpm = sum(tpm)) %>% spread(description, tpm) %>% dplyr::select(-library) 
 
 virus_PCA <- princomp(joined_virus_lib_PCA)  
 
-biplot(virus_PCA)
+pVirusPCA <- biplot(virus_PCA)
 
-# (3) heat-map ov viruses loads (log tpm) per library
+grid.arrange(pVirusAbund,pVirusPCA,nrow = 1, ncol = 2)
+
+# (3) heat-map of viruses loads (log tpm) per library
 # plot the viruses abundance in each library
 # make a vector of the new viruses order
 
 new_order <- c("DWVa", "VDV1/DWVb", "VDV2", "BMV","VOV_1","ARV_2", "DWVc", "AmFV", "VDV3", "ABPV", "VTLV", "SV", "BQCV","VDV4", "IAPV", "KBV", "SBPV", "LSV","CBPV" ,"AFV", "ANV", "VPVL_46","VPVL_36")
 
-# re-order the viruses, based on viral load and viral abundance, and change the names of the viruses:
+# re-order the viruses, based on viral load and viral abundance, and change the names of the viruses to match their common name in the literature:
 viruses_load_arranged <- viruses_load  %>%
   mutate(description =  factor(description, levels = new_order)) %>%
   arrange(description) %>%
   mutate(across("description", str_replace, "VOV_1", "VOV-1")) %>%
   mutate(across("description", str_replace, "ARV_2", "ARV-2")) %>%
   mutate(across("description", str_replace, "SV", "SBV")) %>%
-  mutate(across("description", str_replace, "LSBV", "LSV")) 
-
-
+  mutate(across("description", str_replace, "LSBV", "LSV")) %>%
+  mutate(across("description", str_replace, "VDV1/DWVb", "DWVb"))
 
 # lock in factor level order
 viruses_load_arranged$description <- factor(viruses_load_arranged$description, levels = viruses_load_arranged$description)
@@ -195,36 +239,13 @@ ggplot(data = virus_abund, mapping = aes(x = description,
   xlab(label = "Viruses") +
   ylab(label = "Varroa SRA libraries") +
   labs(fill = "Viral load \n log10(TPM)") + 
-  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 12)) + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 15)) + 
+  theme(axis.text.y = element_text(size = 12)) + 
   theme(axis.ticks = element_blank()) +
-  theme(axis.title = element_text(size = 16)) 
-
-  theme(legend.position=c(0.9,0.975), legend.justification = c(1,1))
-  
-  
-                              
-
-# or use heatmap() function
-x <- viruses_load %>%
-  column_to_rownames("description") %>%
-  as.matrix()
-heatmap(x, Colv = NA, xlab="Libraries", ylab="Viruses", cexRow=1, labRow=paste(rownames(x)))
-
-
-#FFFFCC - cream color
-#scale= "row",
-#Rowv = NA, 
-# virus_heatmap + scale_color_brewer(palette = "BuPu")
-
-#scale_fill_manual(values=c("red", "blue", "green")) +
-#scale_fill_gradient(low="cream", high="blue", space = "Lab")
- #theme(axis.text.x = element_text(angle = 30)) 
- # scale_color_brewer(palette = "RdYlBu") 
-#coul <- colorRampPalette(brewer.pal(8, "Blues"))(25)
-#scale_fill_gradient2(low="#FFFFCC", mid = "#FF9933", high="#990000", space = "Lab")
+  theme(axis.title = element_text(size = 20))
 ```
 
-## virus Correlation matrix: 66 libs, 15 viruses
+### Virus correlation matrix: 66 libraries, 15 viruses
 ```{r prepare virus data: 66, message=FALSE, warning=FALSE}
 viruses_load <- readRDS(file = "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/viruses_load.RData")
 
@@ -339,142 +360,11 @@ virusAbundCor_66 <- corrplot2(
  tl.srt = 270,
   type = "upper")
 
-#tl.srt = 75 - for tilting the viruses names in 75 degrees
-# hcl.colors(n = 50, palette = "RdYlBu", alpha = NULL, rev = FALSE, fixup = TRUE)
-# col <- colorRampPalette(c("#BB4444", "#EE9988", "#FFFFFF", "#77AADD", "#4477AA"))
-# red - negative, blue- positive: col <- colorRampPalette(c("#67001f","#b2182b","#d6604d","#f4a582","#fddbc7","#f7f7f7","#d1e5f0","#92c5de","#4393c3","#2166ac","#053061"))
-# save the matrice for future analysis (Mantel)
-save(virusAbundCor_66, file = "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/virusAbundCor_66.RData")
+# save the matrix for future analysis (Mantel)
+save(virusAbundCor_66, file = "results/virusAbundCor_66.RData")
 ```
 
-## virus Correlation matrix: 57 libs
-```{r prepare virus data: 57, message=FALSE, warning=FALSE}
-# make your data set:
-# plot the viruses abundance in each library 
-viruses_load <- readRDS(file = "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/viruses_load.RData")
+## Gene network analysis
+A gene co-expression network identify genes that interact with one another based on common expression profiles (Barabási and Oltvai 2004). Groups of co-expressed genes that have similar expression patterns across samples are identified using hierarchical clustering and are placed in gene ‘modules’ (Miller, Horvath, and Geschwind 2010). 
+Weighted gene co-expression analysis was conducted using the WGCNA package in R (Langfelder and Horvath 2008).
 
-# prepare the 'viruses_load' table
-# excluding viruses with 'zero tpm': "CBPV", "AFV", "ANV" , "VPVL_46", "VPVL_36", "SBPV", also excluding viruses with low abundance :"KBV", "LSV".  left with 15 viruses
-a_viruses_load_57 <- viruses_load %>%
-  filter(description %in% c("DWVa", "DWVc", "IAPV",  "ABPV", "BQCV","SV", "VDV1/DWVb", "VDV2", "VDV3", "BMV", "ARV_2", "AmFV","VTLV","VDV4","VOV_1")) %>%
-  column_to_rownames("description") %>% 
-  transposeBigData() %>%
-  rownames_to_column("library") %>%
-  #identify and remove the row numbers of the outlierd libraries (found by PCA) 
-  #filter(!(library %in% c("SRR5109825", "SRR5109827", "SRR533974" , "SRR3927496", "SRR8867385"))) %>% 
-  # remove 9 male libraries:
-  filter(!(library %in% c("SRR5760848", "SRR5760838", "SRR5760828", "SRR5760818", "SRR5377265" ,"SRR5377270" ,"SRR5377269" ,"SRR5377263" ,"SRR5377266"))) %>%
-  column_to_rownames("library")
-
-# correlate viruses load-57 libs
-corrplot2 <- function(data,
-                      method = "pearson",
-                      sig.level = 0.05,
-                      order = "original",
-                      diag = FALSE,
-                      type = "upper",
-                      tl.srt = 75,
-                      number.font = 1,
-                      number.cex = 0.5,
-                      mar = c(0, 0, 0, 0)) {
-  
-  data_incomplete <- data
-  data <- data[complete.cases(data), ]
-  mat <- cor(data, method = method)
-  cor.mtest <- function(mat, method) {
-    mat <- as.matrix(mat)
-    n <- ncol(mat)
-    p.mat <- matrix(NA, n, n)
-    diag(p.mat) <- 0
-    for (i in 1:(n - 1)) {
-      for (j in (i + 1):n) {
-        tmp <- cor.test(mat[, i], mat[, j], method = method)
-        p.mat[i, j] <- p.mat[j, i] <- tmp$p.value
-      }
-    }
-    colnames(p.mat) <- rownames(p.mat) <- colnames(mat)
-    p.mat
-  }
-  p.mat <- cor.mtest(data, method = method)
-  col <- colorRampPalette(c("#053061","#2166ac","#4393c3","#92c5de","#d1e5f0","#f7f7f7","#fddbc7","#f4a582","#d6604d","#b2182b","#67001f"))
-  corrplot(mat,
-    method = "color", col = col(200), 
-    mar = mar, 
-    type = type, order = order,
-    tl.col = "black",
-    # hide correlation coefficients on the diagonal
-    diag = diag
-  )
-}
-
-virusAbundCor_57 <- corrplot2(
-  data = a_viruses_load_57,
-  method = "pearson",
-  sig.level = 0.05,
-  order = "original",
-  diag = T, 
-  type = "upper",
-  tl.srt = 75
-)
-
-# save the matrice for future analysis (Mantel)
-save(virusAbundCor_57, file = "/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/virusAbundCor_57.RData")
-```
-
-```{r old version of 57 libs, eval=FALSE, include=FALSE}
-
-
-
-############ theres an error
-corrplot2 <- function(data,
-                      method = "pearson",
-                      sig.level = 0.05,
-                      order = "original",
-                      diag = FALSE,
-                      type = "upper",
-                      tl.srt = 90,
-                      number.font = 1,
-                      number.cex = 0.5,
-                      mar = c(0, 0, 0, 0)) {
-  
-  data_incomplete <- data
-  data <- data[complete.cases(data), ]
-  mat <- cor(data, method = method)
-  cor.mtest <- function(mat, method) {
-    mat <- as.matrix(mat)
-    n <- ncol(mat)
-    p.mat <- matrix(NA, n, n)
-    diag(p.mat) <- 0
-    for (i in 1:(n - 1)) {
-      for (j in (i + 1):n) {
-        tmp <- cor.test(mat[, i], mat[, j], method = method)
-        p.mat[i, j] <- p.mat[j, i] <- tmp$p.value
-      }
-    }
-    colnames(p.mat) <- rownames(p.mat) <- colnames(mat)
-    p.mat
-  }
-  p.mat <- cor.mtest(data, method = method)
-  col <- colorRampPalette(c("blue","white","red"))(200)
-  corrplot(mat,
-    method = "color", col = col(200), number.font = number.font,
-    mar = mar, number.cex = number.cex,
-    type = type, order = order,
-    addCoef.col = "black", # add correlation coefficient
-    tl.col = "black", tl.srt = tl.srt, # rotation of text labels
-    # combine with significance level
-    p.mat = p.mat, sig.level = sig.level, insig = "blank",
-    # hide correlation coefficiens on the diagonal
-    diag = diag
-  )
-}
-
-virusAbundCor_57 <- corrplot2(
-  data = a_viruses_load_57,
-  method = "pearson",
-  sig.level = 0.05,
-  order = "original",
-  diag = FALSE,
-  type = "upper",
-  tl.srt = 75
-)
