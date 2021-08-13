@@ -95,7 +95,7 @@ df_71 <- list.files(path = "data/kallisto", full.names = TRUE) %>%
   lapply(read_kallisto) %>% 
   bind_cols() 
 
-# add a column "target_id" with the genes id
+# add a column "target_id" with the isoform/virus ID
 df_71$target_id <- list.files(path = "data/kallisto", full.names = TRUE)[1] %>% 
   read_tsv() %>% 
   dplyr::select(target_id) %>% 
