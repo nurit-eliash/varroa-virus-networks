@@ -138,16 +138,13 @@ grid.arrange(p71,p66,nrow = 1, ncol = 2)
 
 # remove the 5 outlier libraries from the data frame, and save for all subsequent analyses 
 df <- df_71 %>% dplyr::select(-c("SRR5109825", "SRR5109827", "SRR533974" , "SRR3927496", "SRR8867385"))
+
+# save the two dataframes (original 71, and the final 66 libraries)
+saveRDS(df_71, file = "/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/data/kallisto_71.rds")
+saveRDS(df, file = "/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/data/kallisto.rds")
 ```
-saveRDS(df, file = "/data/kallisto.rds")
-
-משום מה - הקוד לא מצליח לראו את כל הוירוסים, רק את הראשון 
-dwva
-
 
 After filtering outlier libraries (based on PCA analysis), we used a total of 66 SRAs belonging to 9 studies of varroa RNAseq for the network analysis (details of the final libraries available in table S5)
-
-
 
 ## AIM: describing viruses' abundance in the different varroa SRA libraries
 first make the suitable data frame containing virus load in each library
@@ -158,7 +155,7 @@ virusId <- read_tsv("data/viruses.txt", col_names = c("target_id", "description"
 # rename all 6 VOV_1 segemnts with the same name: "VOV_1"
 virusId[3:8, 2] <- "VOV_1"
 
-x <- left_join(virusId, df, by = "target_id") %>% dplyr::select(-target_id) 
+x <- left_join(virusId, df_old, by = "target_id") %>% dplyr::select(-target_id) 
   
 # VOV_1. virus genome has been described in 6 different segments (Levin et al. 2016). 
 # so we sum the 6 segments tpms in each library in a separate table 'VOV_1':
