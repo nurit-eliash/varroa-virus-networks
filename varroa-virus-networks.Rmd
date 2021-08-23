@@ -72,8 +72,10 @@ knitr::opts_chunk$set(echo = TRUE)
 setwd("/Users/nuriteliash/Documents/GitHub/varroa-virus-networks") #set the directory as the local GitHub local repository
 ```
 
+### Creat the initial data frame 
 The mapped libraries were used as input to make a data frame where each column is a SRR library, and each row is an isoform. The cells contain the isoform TPM.  
-The output data frame contains 35,669 isoforms of 71 varroa libraries. the first 35,641 rows belong to the varroa genes, and the last 28 rows are reads that matched to varroa/bee viruses.  
+The output data frame contains 35,669 isoforms of 71 varroa libraries. the first 35,641 rows belong to the varroa genes, and the last 28 rows are reads that matched to varroa/bee viruses. 
+
 ```{r dataframe, echo=TRUE, message=FALSE, warning=FALSE}
 # First make a function for making the mapped reads (output of kallisto) into a data frame
 read_kallisto <- function(filename) {
@@ -96,6 +98,7 @@ df_71$target_id <- list.files(path = "data/kallisto", full.names = TRUE)[1] %>%
 # saveRDS(df_71, file = "/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/data/kallisto_71.rds")
 ```
 
+### Join isoforms into genes
 ```{r Join isoforms into genes,  echo=TRUE, message=FALSE, warning=FALSE}
 # Next, we join isoforms that belong to the same gene.
 # Import the varroa transcripts ("target_id") and their corresponding gene ("gene_id").
@@ -113,11 +116,12 @@ gene_tpm_collps_71 <- gene_tpm_71 %>%
 # spread the table again, by library
 final_gene_tpm_71 <- spread(gene_tpm_collps_71, key = "library", value = "gene_tpm_71") %>% column_to_rownames('gene_id')
 
-# this table will be used for all further analysis
+# this table will be used for all further analyses
 ```
 
+### Detect outlier based on PCA
 Next, we perform Principle Component Analysis (PCA) on varroa genes, to detect outlierd libraries 
-```{r Detect outlier based on PCA, fig.cap = "Figure S1. PCA of varroa SRA libraires based on their genes TPM. a. All 71 libraries. The outlier libraries can be seen on the left side of the plot. These 5 libraries were excluded from further analysis. b. the final 66 libraries used for the analysis." , message=FALSE, warning=FALSE}
+```{r Detect outlier based on PCA, fig.cap="Figure S1. PCA of varroa SRA libraires based on their genes TPM. a. All 71 libraries. The outlier libraries can be seen on the left side of the plot. These 5 libraries were excluded from further analysis. b. the final 66 libraries used for the analysis.", message=FALSE, warning=FALSE}
 
 # Before PCA, we transpose the table "final_gene_tpm_71", and transform (log10+0.000001) 
 final_gene_tpm_71_T<- transposeBigData(log10(final_gene_tpm_71 + 0.000001))
@@ -141,8 +145,9 @@ cex1 = 0.9;
 grid.arrange(p71,p66,nrow = 1, ncol = 2)
 # when we remove them and repeat the PCA, the library scatter more homogeneously.
 ```
-We therefore decided to remove the five outlier libraries from the data frame, and save for subsequent analyses 
 
+After filtering outlier libraries (based on PCA analysis), we used the left 66 SRAs belonging to 9 studies of varroa RNAseq for further analyses (details of the final libraries available in table S5).
+### Remove outlier libraries and save data frame of varroa genes to WGCNA
 ```{r Finnalized libraries for WGCNA,  echo=TRUE, message=FALSE, warning=FALSE}
 # We remove the five outlier libraries from the data frame, and save for subsequent analyses 
 df <- df_71 %>% dplyr::select(-c("SRR5109825", "SRR5109827", "SRR533974" , "SRR3927496", "SRR8867385"))
@@ -154,7 +159,7 @@ for_modules <- final_gene_tpm_71 %>%
   transposeBigData() 
 # saveRDS(for_modules, file = "/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/data/for_modules.rds")
 ```
-After filtering outlier libraries (based on PCA analysis), we used the left 66 SRAs belonging to 9 studies of varroa RNAseq for further analyses (details of the final libraries available in table S5). 
+ 
 
 ## Viral abundance analysis
 AIM: describing viruses' abundance in the different varroa SRA libraries
@@ -187,25 +192,9 @@ head(viruses_load)
 # save the viral load data frame
 #saveRDS(viruses_load, file = "/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/viruses_load.RData")
 ```
- 
-### Vizualize viruses distribution and abundance in (1)abundance plot; (2)PCA of viruses; (3)heat-map
-maybe remove this chunk, as im not referring to these plots in the MS - בכל מקרה , זה כרגע לא עובד כאשר אני מנסה לסרוג את זה:)
-```{r viral abundance -  remove???, eval=FALSE, message=FALSE, warning=FALSE, include=FALSE}
-#df <- read_rds("/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/data/kallisto.rds")
-#viruses_load <- readRDS(file = "/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/viruses_load.RData")
 
-# (1) virus abundance plot
-joined_virus_lib <- viruses_load %>% gather("Library", "tpm", -description)
-ggplot(joined_virus_lib, aes(x= library, y = tpm, fill = description)) + geom_bar(stat = "identity") + theme(axis.text.x = element_text(angle = 90)) 
-
-# (2) plot a PCA of viruses abundance 
-joined_virus_lib_PCA <- joined_virus_lib %>% group_by(description, library) %>% summarise(tpm = sum(tpm)) %>% spread(description, tpm) %>% dplyr::select(-library) 
-virus_PCA <- princomp(joined_virus_lib_PCA)  
-biplot(virus_PCA)
-```
-
-(3) Heat-map of viruses loads (log10(tpm)) per library
-```{r Heat-map of viruses loads per library, fig.cap = "Figure 1. Viral load is diverse across the different varroa libraries. Values are log10 transformed of the reads’ TPM (transcript per millions). Zero values are marked in grey (i.e., none of the reads in this library mapped to this virus). The viruses’ names are abbreviated as described in Table 1.  More information on the viruses’, accession numbers, genome length, references and etc. are available in supp table S1. Members of the Iflavirus family are the most prevalent, yet while some viruses are homogenous across libraries (VDV2), others are highly diverse (e.g. DWVa and DWVb).", message=FALSE, warning=FALSE}
+### Vizualize viruses distribution and abundance in a heat-map
+```{r Heat-map of viruses loads per library (log10(tpm)), fig.cap = "Figure 1. Viral load is diverse across the different varroa libraries. Values are log10 transformed of the reads’ TPM (transcript per millions). Zero values are marked in grey (i.e., none of the reads in this library mapped to this virus). The viruses’ names are abbreviated as described in Table 1.  More information on the viruses’, accession numbers, genome length, references and etc. are available in supp table S1. Members of the Iflavirus family are the most prevalent, yet while some viruses are homogenous across libraries (VDV2), others are highly diverse (e.g. DWVa and DWVb).", message=FALSE, warning=FALSE}
 # (3) heat-map of viruses loads (log10(tpm)) per library
 # plot the viruses abundance in each library
 # make a vector of the new viruses order
@@ -401,9 +390,9 @@ geneTree = net$dendrograms[[1]];
 ```
 
 ### (2) Correlating modules to viral load
-prepare the "viralTraits" table of virus variables you wish to correlate to varroa modules
+To test if the varroa modules interact with the different viruses it carries, we correlated the module eigengenes to the viruses’ load (log10TPM). We used Pearson correlation method and adjusted the p-values for multiple comparisons using the Benjamini–Hochberg method to control the false discovery rate (Benjamini and Hochberg 1995) (Fig 2b). 
 ```{r Quantifying module–trait associations, fig.cap = "Figure 2. Intra-viral interactions can predict virus - vector interactions. b. Correlation between viruses’ loads and varroa modules (eigengenes).  Viruses and modules are ordered according to hierarchical clustering; P-values of  the Pearson coefficient are adjusted according to FDR-correction; correlation significance marked by (*) 0.1 < Padjust < 0.01; (**) Padjust < 0.01. For analysis in figure c, Mantel test for correlation between two matrices was conducted using 1,000 permutations. All viruses’ loads are transformed by log10 of the (TPM), Transcripts Per Million.", message=FALSE, warning=FALSE}
-# For correlating varroa modules to viral load, we gonna use the table of 15 viruses saved in chunk "viral correlation", in section "viral correlation matrix", and correlated these to the varroa modules eigengenes. 
+# For correlating varroa modules to viral load, we gonna use the table of 15 viruses saved in chunk "viral correlation", in section "viral correlation matrix", and correlated these to the varroa modules eigengenes found in the previous chunk. 
 
 # First we load the two data:
 # viruses_load_15 <- read_rds("/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/viruses_load_15.rds")
@@ -469,11 +458,127 @@ labeledHeatmap(Matrix = moduleTraitCor_66,
                zlim = c(-1,1),
                main = paste("Varroa Module-viruses relationships"))
 
-# save the matrices for next analysis
+# save the matrices for next analyses
 # save(moduleTraitCor_66,moduleTraitPadjust_66, file = "/results/moduleTraitCor_66.RData")
 ```
+Correlating varroa modules eigengenes to their viruses’ loads (transcript per million, TPM), we found significant interactions between specific modules and viruses (Pearson correlation followed by Benjamini-Hochberg FDR-correction, P-adjust < 0.1, Fig 2b). 
 
+Module number | Module color
+--------------|---------------
+  MM.0        | MM.grey
+  MM.1        | MM.turquoise 
+  MM.2        | MM.blue 
+  MM.3        | MM.brown
+  MM.4        | MM.yellow
+  MM.5        | MM.green
+  MM.6        | MM.red
+  MM.7        | MM.black
+  MM.8        | MM.pink
+  MM.9        | MM.magenta
+  MM.10       | MM.purple
+  MM.11       | MM.greenyellow
+  MM.1        | MM.tan 
+  MM.13       | MM.salmon
+  MM.14       | MM.cyan
+  MM.15       | MM.midnightblue
+---
 ### (3)  Identifying important genes, ‘hub-genes’
+The important genes were identified by accounting for two main parameters: Gene Significance and Module Membership (Langfelder and Horvath 2008). The Gene Significance is the correlation between the gene and the trait (the viral load), and the Module Membership is the correlation of the module eigengene and the gene expression. Genes with both high Gene Significance and Module Membership are referred as ‘hub-genes’, as they are expected to have high biological impact on many genes in the vector, and at the same time show high interaction with the viruses. Therefore, these genes may play a role in the vector-virus interaction, and are good candidates for later experimental validation.
+
+
+
+```{r Calculating Gene Significanse (GS), message=FALSE, warning=FALSE}
+# names (colors) of the modules
+modNames = substring(names(MEs), 3)
+virusNames = substring(names(b_viruses_load), 1)
+
+#make a table of the Module-membership ("MM") of each gene (which is its correlation coefficient, pearson)
+geneModuleMembership_66 = as.data.frame(cor(for_modules, MEs, use = "p"));
+MMPvalue_66 = as.data.frame(corPvalueStudent(as.matrix(geneModuleMembership_66), nSamples));
+
+### Controlling the false discovery rate: Benjamini–Hochberg procedure ###
+# using p.adjust function, for all comparisons, 15 modules and 15 viruses (m=225). 
+
+# first make the p-value matrix into a dataframe
+MMPvalue_66_0 <- as.data.frame(MMPvalue_66)
+
+# then "gather" all the p-values, so they will appear in one column
+longer_Pvalue <- MMPvalue_66_0 %>% 
+    rownames_to_column("module") %>%
+    gather("virus", "pvalue", -module)
+
+# now calculate the p.adjust for each p-value 
+Padjust <- p.adjust(longer_Pvalue$pvalue, method = "fdr")
+
+# and add the column of adjusted pvalues
+Padjust <- add_column(longer_Pvalue, Padjust)
+
+# now spread it back
+MMPadjust_66 <- Padjust %>% 
+    dplyr::select(-pvalue) %>% 
+    group_by(virus) %>%
+    pivot_wider(names_from = virus, values_from = Padjust)
+MMPadjust_66 <- column_to_rownames(MMPadjust_66, "module")  
+  
+#change the name of the columns to start with "MM" then the module name
+names(geneModuleMembership_66) = paste("MM", modNames, sep="");
+names(MMPadjust_66) = paste("padj.MM", modNames, sep="");
+```
+
+#### Calculating Gene Significanse (GS)
+```{r Calculating Gene Significanse (GS), message=FALSE, warning=FALSE}
+# make a table with the Trait-significance ("GS") for each gene (which is its correlation coefficient, pearson)
+geneTraitSignificance_66 = as.data.frame(cor(for_modules, b_viruses_load, use = "p"));
+GSPvalue_66 = as.data.frame(corPvalueStudent(as.matrix(geneTraitSignificance_66), nSamples));
+
+### Controlling the false discovery rate: Benjamini–Hochberg procedure ###
+# using p.adjust function, for all comparisons, 15 modules and 15 viruses (m=225). 
+
+# first make the p-value matrix into a dataframe
+GSPvalue_66_0 <- as.data.frame(GSPvalue_66)
+
+# then "gather" all the p-values, so they will apear in one column
+longer_Pvalue <- GSPvalue_66_0 %>% 
+    rownames_to_column("module") %>%
+    gather("virus", "pvalue", -module)
+
+# now calculate the p.adjust for each p-value 
+Padjust <- p.adjust(longer_Pvalue$pvalue, method = "fdr")
+
+# and add the column of adjusted pvalues
+Padjust <- add_column(longer_Pvalue, Padjust)
+
+# now spread it back
+GSPadjust_66 <- Padjust %>% 
+    dplyr::select(-pvalue) %>% 
+    group_by(virus) %>%
+    pivot_wider(names_from = virus, values_from = Padjust)
+GSPadjust_66 <- column_to_rownames(GSPadjust_66, "module")
+
+#rename the col names by adding the initial "GS." for genesignificance, and "p.GS." for p-value.
+names(geneTraitSignificance_66) = paste("GS.", names(b_viruses_load), sep="");
+names(GSPadjust_66) = paste("pdj.GS.", names(b_viruses_load), sep="");
+```
+
+
+# save data:
+# save(geneTraitSignificance_66, GSPadjust_66, geneModuleMembership_66, MMPadjust_66, file = "/results/geneTraitANDgeneMM_66.RData")
+
+
+מה ההבדל בין זה לבין מה שחישבתי קודם 
+ובמה מהם השתמשתי בשביל למצוא את הה
+hubgenes>???
+```{r Calculating Module membership for each gene, message=FALSE, warning=FALSE}
+# We define a data frame containing the module membership (MM) values for each module. In the past, we called the module membership values kME.
+datKME=signedKME(for_modules, MEs, outputColumnName="MM.")
+# Display the first few rows of the data frame
+head(datKME)
+
+#We have a module membership value for each gene in ALL modules
+```
+
+### WGCNA 3.b Gene relationship to trait and important modules: Gene Significance and Module Membership
+
 
 ### (4) GO-term enrichment analysis for varroa modules
 
