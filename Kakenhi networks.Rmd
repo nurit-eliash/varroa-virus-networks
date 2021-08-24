@@ -1,0 +1,115 @@
+---
+title: "Kakenhi networks"
+author: "Nurit Eliash"
+date: "8/24/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+for the kakenhi 2022 - i wish to make a code that will find the REAL 'hub-genes'
+
+### (3)  Identifying important genes, ‘hub-genes’
+The important genes were identified by accounting for two main parameters: Gene Significance and Module Membership (Langfelder and Horvath 2008). The Gene Significance is the correlation between the gene and the trait (the viral load), and the Module Membership is the correlation of the module eigengene and the gene expression. Genes with both high Gene Significance and Module Membership are referred as ‘hub-genes’, as they are expected to have high biological impact on many genes in the vector, and at the same time show high interaction with the viruses. Therefore, these genes may play a role in the vector-virus interaction, and are good candidates for later experimental validation.
+
+#### Calculating Gene Significanse (GS)
+```{r Calculating Gene Significanse (GS), eval=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+# make a table with the Trait-significance ("GS") for each gene (which is its correlation coefficient, pearson)
+geneTraitSignificance_66 = as.data.frame(cor(for_modules, viruses_load_15, use = "p"));
+GSPvalue_66 = as.data.frame(corPvalueStudent(as.matrix(geneTraitSignificance_66), nSamples));
+
+### Controlling the false discovery rate: Benjamini–Hochberg procedure ###
+# using p.adjust function, for all comparisons, 15 modules and 15 viruses (m=225). 
+
+# first make the p-value matrix into a dataframe
+GSPvalue_66_0 <- as.data.frame(GSPvalue_66)
+
+# then "gather" all the p-values, so they will apear in one column
+longer_Pvalue <- GSPvalue_66_0 %>% 
+  rownames_to_column("module") %>%
+  gather("virus", "pvalue", -module)
+
+# now calculate the p.adjust for each p-value 
+Padjust <- p.adjust(longer_Pvalue$pvalue, method = "fdr")
+
+# and add the column of adjusted pvalues
+Padjust <- add_column(longer_Pvalue, Padjust)
+
+# now spread it back
+GSPadjust_66 <- Padjust %>% 
+  dplyr::select(-pvalue) %>% 
+  group_by(virus) %>%
+  pivot_wider(names_from = virus, values_from = Padjust)
+GSPadjust_66 <- column_to_rownames(GSPadjust_66, "module")
+
+#rename the col names by adding the initial "GS." for genesignificance, and "p.GS." for p-value.
+names(geneTraitSignificance_66) = paste("GS.", names(viruses_load_15), sep="");
+names(GSPadjust_66) = paste("pdj.GS.", names(viruses_load_15), sep="");
+```
+
+#### Calculating gene Module-membership (MM)
+```{r Calculating genes Module-membership (MM), message=FALSE, warning=FALSE}
+# names (colors) of the modules
+modNames = substring(names(MEs), 3)
+# virusNames = substring(names(viruses_load_15), 1)
+
+#make a table of the Module-membership ("MM") of each gene (which is its correlation coefficient, pearson)
+geneModuleMembership_66 = as.data.frame(cor(for_modules, MEs, use = "p"));
+MMPvalue_66 = as.data.frame(corPvalueStudent(as.matrix(geneModuleMembership_66), nSamples));
+
+### Controlling the false discovery rate: Benjamini–Hochberg procedure ###
+# using p.adjust function, for all comparisons, 15 modules and 15 viruses (m=225). 
+
+# first make the p-value matrix into a dataframe
+MMPvalue_66_0 <- as.data.frame(MMPvalue_66)
+
+# then "gather" all the p-values, so they will appear in one column
+longer_Pvalue <- MMPvalue_66_0 %>% 
+    rownames_to_column("module") %>%
+    gather("virus", "pvalue", -module)
+
+# now calculate the p.adjust for each p-value 
+Padjust <- p.adjust(longer_Pvalue$pvalue, method = "fdr")
+
+# and add the column of adjusted pvalues
+Padjust <- add_column(longer_Pvalue, Padjust)
+
+# now spread it back
+MMPadjust_66 <- Padjust %>% 
+    dplyr::select(-pvalue) %>% 
+    group_by(virus) %>%
+    pivot_wider(names_from = virus, values_from = Padjust)
+MMPadjust_66 <- column_to_rownames(MMPadjust_66, "module")  
+  
+#change the name of the columns to start with "MM" then the module name
+names(geneModuleMembership_66) = paste("MM", modNames, sep="");
+names(MMPadjust_66) = paste("padj.MM", modNames, sep="");
+```
+
+### Intramodular connectivity
+```{r  Intramodular connectivity, eval=FALSE, include=FALSE}
+# We begin by calculating the intramodular connectivity for each gene. (In network literature, connectivity is often referred to as ”degree”.) The function intramodularConnectivity computes the whole network connectivity kTotal, the within module connectivity kWithin, kOut=kTotal-kWithin, and kDiff=kIn-kOut=2*kIN-kTotal
+
+# calculate the correlation between each pair of genes 
+ADJ1_66 <- abs(cor(for_modules,use="p"))^6
+# compute the different degrees of connectivity:
+Alldegrees1_66 <- intramodularConnectivity(ADJ1_66, moduleColors)
+head(Alldegrees1_66)
+
+#save it 
+#save(Alldegrees1_66, file = "/results/IntraModCon66.RData")
+
+```
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

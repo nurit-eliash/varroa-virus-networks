@@ -482,15 +482,16 @@ Module number | Module color
   MM.14       | MM.cyan
   MM.15       | MM.midnightblue
 ---
-### (3)  Identifying important genes, ‘hub-genes’
-The important genes were identified by accounting for two main parameters: Gene Significance and Module Membership (Langfelder and Horvath 2008). The Gene Significance is the correlation between the gene and the trait (the viral load), and the Module Membership is the correlation of the module eigengene and the gene expression. Genes with both high Gene Significance and Module Membership are referred as ‘hub-genes’, as they are expected to have high biological impact on many genes in the vector, and at the same time show high interaction with the viruses. Therefore, these genes may play a role in the vector-virus interaction, and are good candidates for later experimental validation.
 
+### (3)  Identifying important genes
+The important genes were identified according to their Module membership (Langfelder and Horvath 2008), and their annotation (based on sequence similarity to homologue genes).
+A gene Module membership expresses its connection to other genes in the module, and therefore, measures the extent to which this gene represents the overall module. The Module membership is calculated by Pearson correlation of the module eigengene and the gene expression. Genes with high Module membership and relevant annotation are likely to play a role in the vector-virus interaction, and are good candidates for later experimental validation.
 
-
-```{r Calculating Gene Significanse (GS), message=FALSE, warning=FALSE}
+#### Calculating gene Module-membership (MM)
+```{r Calculating genes Module-membership (MM), message=FALSE, warning=FALSE}
 # names (colors) of the modules
 modNames = substring(names(MEs), 3)
-virusNames = substring(names(viruses_load_15), 1)
+# virusNames = substring(names(viruses_load_15), 1)
 
 #make a table of the Module-membership ("MM") of each gene (which is its correlation coefficient, pearson)
 geneModuleMembership_66 = as.data.frame(cor(for_modules, MEs, use = "p"));
@@ -525,83 +526,18 @@ names(geneModuleMembership_66) = paste("MM", modNames, sep="");
 names(MMPadjust_66) = paste("padj.MM", modNames, sep="");
 ```
 
-#### Calculating Gene Significanse (GS)
-```{r Calculating Gene Significanse (GS), message=FALSE, warning=FALSE}
-# make a table with the Trait-significance ("GS") for each gene (which is its correlation coefficient, pearson)
-geneTraitSignificance_66 = as.data.frame(cor(for_modules, viruses_load_15, use = "p"));
-GSPvalue_66 = as.data.frame(corPvalueStudent(as.matrix(geneTraitSignificance_66), nSamples));
-
-### Controlling the false discovery rate: Benjamini–Hochberg procedure ###
-# using p.adjust function, for all comparisons, 15 modules and 15 viruses (m=225). 
-
-# first make the p-value matrix into a dataframe
-GSPvalue_66_0 <- as.data.frame(GSPvalue_66)
-
-# then "gather" all the p-values, so they will apear in one column
-longer_Pvalue <- GSPvalue_66_0 %>% 
-    rownames_to_column("module") %>%
-    gather("virus", "pvalue", -module)
-
-# now calculate the p.adjust for each p-value 
-Padjust <- p.adjust(longer_Pvalue$pvalue, method = "fdr")
-
-# and add the column of adjusted pvalues
-Padjust <- add_column(longer_Pvalue, Padjust)
-
-# now spread it back
-GSPadjust_66 <- Padjust %>% 
-    dplyr::select(-pvalue) %>% 
-    group_by(virus) %>%
-    pivot_wider(names_from = virus, values_from = Padjust)
-GSPadjust_66 <- column_to_rownames(GSPadjust_66, "module")
-
-#rename the col names by adding the initial "GS." for genesignificance, and "p.GS." for p-value.
-names(geneTraitSignificance_66) = paste("GS.", names(viruses_load_15), sep="");
-names(GSPadjust_66) = paste("pdj.GS.", names(viruses_load_15), sep="");
-```
-
-should i show Intramodular connectivity, if im not taling about it in the MS?
-```{r eval=FALSE, include=FALSE}
-# We begin by calculating the intramodular connectivity for each gene. (In network literature, connectivity is often referred to as ”degree”.) The function intramodularConnectivity computes the whole network connectivity kTotal, the within module connectivity kWithin, kOut=kTotal-kWithin, and kDiff=kIn-kOut=2*kIN-kTotal
-
-# calculate the correlation between each pair of genes 
-ADJ1_66 <- abs(cor(for_modules,use="p"))^6
-# compute the different degrees of connectivity:
-Alldegrees1_66 <- intramodularConnectivity(ADJ1_66, moduleColors)
-head(Alldegrees1_66)
-
-#save it 
-#save(Alldegrees1_66, file = "/results/IntraModCon66.RData")
-
-```
-
-```{r}
-
-```
-
-```{r}
-allGenes <- data.frame(
-  module = moduleColors,
-  geneTraitSignificance_66,
-  GSPadjust_66,
-  geneModuleMembership_66,
-  MMPadjust_66,
-  IntraModCon = Alldegrees1_66$kWithin) %>%
-  dplyr::select(c(module, IntraModCon, MMpurple, padj.MMpurple, MMpink, padj.MMpink, MMgreen, padj.MMgreen, GS.DWVa, pdj.GS.DWVa, GS.VDV2, pdj.GS.VDV2, GS.ARV_2, pdj.GS.ARV_2)) %>%
-  rownames_to_column("genes")
-
+#### Identifying genes with high Module-membership in module 10 (the purple module) and adding gene annotations
+```{r Identifying genes with high Module-membership in module 10 and adding gene annotations, message=FALSE, warning=FALSE}
 genePurple = data.frame(
-  module = moduleColors,
-  geneTraitSignificance_66,
-  GSPadjust_66,
+  moduleCol = moduleColors,
   geneModuleMembership_66,
-  MMPadjust_66,
-  IntraModCon = Alldegrees1_66$kWithin) %>%
-  dplyr::select(c(module, IntraModCon, MMpurple, padj.MMpurple, GS.DWVa, pdj.GS.DWVa, GS.VDV2, pdj.GS.VDV2, GS.ARV_2, pdj.GS.ARV_2)) %>%
-  dplyr::filter(module == "purple") %>%
+  MMPadjust_66) %>%
+  dplyr::select(c(moduleCol, MMpurple, padj.MMpurple)) %>%
+  dplyr::filter(moduleCol == "purple") %>%
+  mutate(moduleNum = "Module.10") %>%
   rownames_to_column("genes")
 
-write_csv(genePurple, "/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/genePurple.csv")
+# write_csv(genePurple, "/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/genePurple.csv")
 
 ### filtering for important genes in the module ###
 # module membership filtration:
@@ -614,29 +550,26 @@ annot_varroa <- read_csv("/Users/nuriteliash/Documents/GitHub/varroa-virus-netwo
 
 # remove the "LOC" from the gene name
 annot_varroa$Locus <- str_replace(annot_varroa$Locus, "LOC", '')
-# and change the col name to "genes", so it will the same as in the "overlap" table
+# change the col name to "genes", so it will the same as in the "overlap" table
 colnames(annot_varroa)[which(names(annot_varroa) == "Locus")] <- "genes"
 head(annot_varroa)
+
+# and filter out duplicated genes
+# there are 10,245 unique genes, as many of the genes are coding for a few proteins
+length(unique(annot_varroa$genes))
+
+genesModule.10 <- left_join() annot_varroa
+
+# count the number of duplicates genes, out of the 
+count(duplicated(annot_varroa$genes))
+
+#overlap_annot <-overlap_annot[!duplicated(overlap_annot[,'genes']),] 
 ```
 
 
-```
 
 # save data:
 # save(geneTraitSignificance_66, GSPadjust_66, geneModuleMembership_66, MMPadjust_66, file = "/results/geneTraitANDgeneMM_66.RData")
-
-
-מה ההבדל בין זה לבין מה שחישבתי קודם 
-ובמה מהם השתמשתי בשביל למצוא את הה
-hubgenes>???
-```{r Calculating Module membership for each gene, message=FALSE, warning=FALSE}
-# We define a data frame containing the module membership (MM) values for each module. In the past, we called the module membership values kME.
-datKME=signedKME(for_modules, MEs, outputColumnName="MM.")
-# Display the first few rows of the data frame
-head(datKME)
-
-#We have a module membership value for each gene in ALL modules
-```
 
 ### WGCNA 3.b Gene relationship to trait and important modules: Gene Significance and Module Membership
 
