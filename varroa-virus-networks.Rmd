@@ -490,7 +490,7 @@ The important genes were identified by accounting for two main parameters: Gene 
 ```{r Calculating Gene Significanse (GS), message=FALSE, warning=FALSE}
 # names (colors) of the modules
 modNames = substring(names(MEs), 3)
-virusNames = substring(names(b_viruses_load), 1)
+virusNames = substring(names(viruses_load_15), 1)
 
 #make a table of the Module-membership ("MM") of each gene (which is its correlation coefficient, pearson)
 geneModuleMembership_66 = as.data.frame(cor(for_modules, MEs, use = "p"));
@@ -528,7 +528,7 @@ names(MMPadjust_66) = paste("padj.MM", modNames, sep="");
 #### Calculating Gene Significanse (GS)
 ```{r Calculating Gene Significanse (GS), message=FALSE, warning=FALSE}
 # make a table with the Trait-significance ("GS") for each gene (which is its correlation coefficient, pearson)
-geneTraitSignificance_66 = as.data.frame(cor(for_modules, b_viruses_load, use = "p"));
+geneTraitSignificance_66 = as.data.frame(cor(for_modules, viruses_load_15, use = "p"));
 GSPvalue_66 = as.data.frame(corPvalueStudent(as.matrix(geneTraitSignificance_66), nSamples));
 
 ### Controlling the false discovery rate: Benjamini–Hochberg procedure ###
@@ -556,10 +556,71 @@ GSPadjust_66 <- Padjust %>%
 GSPadjust_66 <- column_to_rownames(GSPadjust_66, "module")
 
 #rename the col names by adding the initial "GS." for genesignificance, and "p.GS." for p-value.
-names(geneTraitSignificance_66) = paste("GS.", names(b_viruses_load), sep="");
-names(GSPadjust_66) = paste("pdj.GS.", names(b_viruses_load), sep="");
+names(geneTraitSignificance_66) = paste("GS.", names(viruses_load_15), sep="");
+names(GSPadjust_66) = paste("pdj.GS.", names(viruses_load_15), sep="");
 ```
 
+should i show Intramodular connectivity, if im not taling about it in the MS?
+```{r eval=FALSE, include=FALSE}
+# We begin by calculating the intramodular connectivity for each gene. (In network literature, connectivity is often referred to as ”degree”.) The function intramodularConnectivity computes the whole network connectivity kTotal, the within module connectivity kWithin, kOut=kTotal-kWithin, and kDiff=kIn-kOut=2*kIN-kTotal
+
+# calculate the correlation between each pair of genes 
+ADJ1_66 <- abs(cor(for_modules,use="p"))^6
+# compute the different degrees of connectivity:
+Alldegrees1_66 <- intramodularConnectivity(ADJ1_66, moduleColors)
+head(Alldegrees1_66)
+
+#save it 
+#save(Alldegrees1_66, file = "/results/IntraModCon66.RData")
+
+```
+
+```{r}
+
+```
+
+```{r}
+allGenes <- data.frame(
+  module = moduleColors,
+  geneTraitSignificance_66,
+  GSPadjust_66,
+  geneModuleMembership_66,
+  MMPadjust_66,
+  IntraModCon = Alldegrees1_66$kWithin) %>%
+  dplyr::select(c(module, IntraModCon, MMpurple, padj.MMpurple, MMpink, padj.MMpink, MMgreen, padj.MMgreen, GS.DWVa, pdj.GS.DWVa, GS.VDV2, pdj.GS.VDV2, GS.ARV_2, pdj.GS.ARV_2)) %>%
+  rownames_to_column("genes")
+
+genePurple = data.frame(
+  module = moduleColors,
+  geneTraitSignificance_66,
+  GSPadjust_66,
+  geneModuleMembership_66,
+  MMPadjust_66,
+  IntraModCon = Alldegrees1_66$kWithin) %>%
+  dplyr::select(c(module, IntraModCon, MMpurple, padj.MMpurple, GS.DWVa, pdj.GS.DWVa, GS.VDV2, pdj.GS.VDV2, GS.ARV_2, pdj.GS.ARV_2)) %>%
+  dplyr::filter(module == "purple") %>%
+  rownames_to_column("genes")
+
+write_csv(genePurple, "/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/genePurple.csv")
+
+### filtering for important genes in the module ###
+# module membership filtration:
+# MM > 0.6
+# padj.MM < E-05
+
+# add gene annotation:
+# load the annotation file:
+annot_varroa <- read_csv("/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/data/annot_varroa.csv", col_names = TRUE, )
+
+# remove the "LOC" from the gene name
+annot_varroa$Locus <- str_replace(annot_varroa$Locus, "LOC", '')
+# and change the col name to "genes", so it will the same as in the "overlap" table
+colnames(annot_varroa)[which(names(annot_varroa) == "Locus")] <- "genes"
+head(annot_varroa)
+```
+
+
+```
 
 # save data:
 # save(geneTraitSignificance_66, GSPadjust_66, geneModuleMembership_66, MMPadjust_66, file = "/results/geneTraitANDgeneMM_66.RData")
