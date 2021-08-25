@@ -157,8 +157,8 @@ After filtering outlier libraries (based on PCA analysis), we used the left 66 S
 ### Remove outlier libraries and save data frame of varroa genes to WGCNA
 ```{r Finnalized libraries for WGCNA,  echo=TRUE, message=FALSE, warning=FALSE}
 # We remove the five outlier libraries from the data frame, and save for subsequent analyses 
+load(file = "/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/data/kallisto_71.rds")
 df <- df_71 %>% dplyr::select(-c("SRR5109825", "SRR5109827", "SRR533974" , "SRR3927496", "SRR8867385"))
-# saveRDS(df, file = "/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/data/kallisto.rds")
 
 # In addition, we save the final varroa genes TPM values per library, of the filtered 66 libraries, for the Gene Network analysis.
 for_modules <- final_gene_tpm_71 %>% 
@@ -406,7 +406,7 @@ To test if the varroa modules interact with the different viruses it carries, we
 # For correlating varroa modules to viral load, we gonna use the table of 15 viruses saved in chunk "viral correlation", in section "viral correlation matrix", and correlated these to the varroa modules eigengenes found in the previous chunk. 
 
 # First we load the two data:
-viruses_load_15 <- read_rds("/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/viruses_load_15.rds")
+load("/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/viruses_load_15.rds")
 load(file = "/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/Varroa_modules_networkConstruction-auto.RData")
 
 # Define numbers of genes and samples
