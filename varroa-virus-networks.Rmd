@@ -485,12 +485,12 @@ moduleTraitPadjust <- column_to_rownames(moduleTraitPadjust, "module") %>%
 
 ```{r plot module-virus interactions, fig.cap = "Figure 2b. Correlation between viruses’ loads and varroa modules (eigengenes).  Viruses and modules are ordered according to hierarchical clustering; P-values of  the Pearson coefficient are adjusted according to FDR-correction. In each cell, module-virus correlation values are given: Pearson correlation coefficient (up) and adjusted P-value.", fig.width = 10, fig.height = 10, message=FALSE, warning=FALSE}
 #  Display correlations and their adjusted p-values
-textMatrix = paste(signif(moduleTraitCor, 2), "\n(",
+textMatrix = paste(signif(moduleTraitCor_66, 2), "\n(",
                    signif(moduleTraitPadjust, 1), ")", sep = "");
-dim(textMatrix) = dim(moduleTraitCor)
+dim(textMatrix) = dim(moduleTraitCor_66)
 par(mar = c(6, 8.5, 3, 3));
 # Display the correlation values within a heatmap plot
-labeledHeatmap(Matrix = moduleTraitCor,
+labeledHeatmap(Matrix = moduleTraitCor_66,
                xLabels = names(viruses_load_15),
                yLabels = names(MEs),
                #xLabelsAngle = 90,

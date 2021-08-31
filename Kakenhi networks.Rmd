@@ -1,21 +1,193 @@
 ---
-title: "Kakenhi networks"
+title: "Vector-virus networks: Identifying target-genes for experimental validation"
+subtitle: "Supplementary for Kakenhi grant application"
 author: "Nurit Eliash"
 date: "8/24/2021"
-output: html_document
+output:
+  html_document:
+    code_folding: hide
+    theme: paper
+    toc: yes
+    toc_depth: 5
+    toc_float:
+      collapsed: yes
+      df_print: paged
 ---
+<style type="text/css">
+  body{
+  font-size: 12pt;
+}
+</style>
 
-```{r setup, include=FALSE}
+The analysis is based on the outputs of "varroa-virus-networks.Rmd", in the meta-transcriptomic analysis on  [GitHub web-page](https://github.com/nurit-eliash/varroa-virus-networks). All analyses can be reproduced directly using the input files available.  
+
+This mark down document starts from the second step of the network analysis, when we correlate the varroa modules to viruses' load, in order to detect interesting modules. 
+
+### Load libraries
+```{r load library, echo = T, results = 'hide', message=FALSE, warning=FALSE}
+library("dplyr")
+library("tidyverse")
+library("vegan")
+library("DESeq2") 
+library("ggfortify")
+library("WGCNA")
+options(stringsAsFactors = FALSE) # Allow multi-threading within WGCNA. This helps speed up certain calculations.
+library("rmarkdown")
+library("knitr") # for the markdown
+library("kableExtra") # for creating a scrolling table
+library("ggplot2") # for plotting 
+library("ape") # for mantel.test
+library("Biostrings")
+library("ggrepel") # for spreading text labels on the plot
+library("scales") # for axis labels notation
+library("GO.db") # for GO term annotation 
+library("reshape2")
+library("RSQLite")
+library("AnnotationDbi") # for GO term annotation 
+library("GSEABase")
+library("GOstats")
+library("maps") # for the map background
+library("htmltools")
+library("rgdal")
+library("grid")
+library("gridExtra")
+library("GeneOverlap") # for making the overlapping genes
+library("cluster")
+library("rmdformats")
+library("corrplot") # for virus-virus correlation
+library("viridis")
+library("hrbrthemes")
+library("ggthemes")
+library("RColorBrewer")
+library("naniar")
 knitr::opts_chunk$set(echo = TRUE)
+setwd("/Users/nuriteliash/Documents/GitHub/varroa-virus-networks") #set the directory as the local GitHub local repository
 ```
 
-for the kakenhi 2022 - i wish to make a code that will find the REAL 'hub-genes'
+
+### (2) Correlating modules to viral load
+To test if the varroa modules interact with the different viruses it carries, we correlated the module eigengenes to the viruses’ load (log10TPM). We used Pearson correlation method and adjusted the p-values for multiple comparisons using the Benjamini–Hochberg method to control the false discovery rate (Benjamini and Hochberg 1995) (Fig 2b). 
+```{r Quantifying module–trait associations,  message=FALSE, warning=FALSE}
+# For correlating varroa modules to viral load, we gonna use the table of 15 viruses saved in chunk "viral correlation", in section "viral correlation matrix", and correlated these to the varroa modules eigengenes found in the previous chunk. 
+
+# First we load the two data:
+load("/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/viruses_load_15.rds")
+# change the names of the viruses to match their common name in the literature:
+viruses_load_15 <- viruses_load_15 %>%
+  dplyr::rename("VOV-1" = "VOV_1", "ARV-2"= "ARV_2", "SBV"= "SV", "DWVb"="VDV1/DWVb")
+
+load(file = "/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/Varroa_modules_networkConstruction-auto.RData")
+load(file = "/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/for_modules.rds")
+
+# Define numbers of genes and samples
+nGenes = ncol(for_modules);
+nSamples = nrow(for_modules)
+# Recalculate MEs with color labels 
+MEs0 = moduleEigengenes(for_modules, moduleColors)$eigengenes
+MEs = orderMEs(MEs0)
+
+# correlate the modules eigengenes (MEs) with the viral load (viruses_load_15)
+moduleTraitCor_66 = cor(MEs, viruses_load_15, use = "p") %>%
+  as.matrix()
+moduleTraitPvalue = corPvalueStudent(moduleTraitCor_66, nSamples)
+
+### Controlling the false discovery rate: Benjamini–Hochberg procedure ###
+# using p.adjust function, for all comparisons, 15 modules and 15 viruses (m=225). 
+
+# first make the p-value matrix into a dataframe
+moduleTraitPvalue_0 <- as.data.frame(moduleTraitPvalue)
+
+# then "gather" all the p-values, so they will apear in one column
+longer_Pvalue <- moduleTraitPvalue_0 %>% 
+  rownames_to_column("module") %>%
+  gather("virus", "pvalue", -module)
+
+# now calculate the p.adjust for each p-value 
+Padjust <- p.adjust(longer_Pvalue$pvalue, method = "fdr")
+
+# and add the column of adjusted pvalues
+Padjust <- add_column(longer_Pvalue, Padjust)
+
+# now spread it back
+moduleTraitPadjust <- Padjust %>% 
+  dplyr::select(-pvalue) %>% 
+  group_by(virus) %>%
+  pivot_wider(names_from = virus, values_from = Padjust) 
+moduleTraitPadjust <- column_to_rownames(moduleTraitPadjust, "module") %>%
+  as.matrix()
+```
+
+```{r plot module-virus interactions, fig.cap = "Figure 2b. Correlation between viruses’ loads and varroa modules (eigengenes).  Viruses and modules are ordered according to hierarchical clustering; P-values of  the Pearson coefficient are adjusted according to FDR-correction. In each cell, module-virus correlation values are given: Pearson correlation coefficient (up) and adjusted P-value.", fig.width = 10, fig.height = 10, message=FALSE, warning=FALSE}
+#  Display correlations and their adjusted p-values
+textMatrix = paste(signif(moduleTraitCor_66, 2), "\n(",
+                   signif(moduleTraitPadjust, 1), ")", sep = "");
+dim(textMatrix) = dim(moduleTraitCor_66)
+par(mar = c(6, 8.5, 3, 3));
+# Display the correlation values within a heatmap plot
+labeledHeatmap(Matrix = moduleTraitCor_66,
+               xLabels = names(viruses_load_15),
+               yLabels = names(MEs),
+               #xLabelsAngle = 90,
+               ySymbols = names(MEs),
+               colorLabels = FALSE,
+               colors = hcl.colors(n = 50, palette = "RdBu", alpha = NULL, rev = FALSE, fixup = TRUE),
+               invertColors = TRUE,
+               textMatrix = textMatrix,
+               setStdMargins = FALSE,
+               cex.text = 0.7,
+               zlim = c(-1,1),
+               main = paste("Varroa Module-viruses relationships"))
+
+# save the matrices for next analyses
+#save(moduleTraitCor_66,moduleTraitPadjust_66, file = "/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/moduleTraitCor_66.RData")
+```
+
+Correlating varroa modules eigengenes to their viruses’ loads (transcript per million, TPM), we found significant interactions between specific modules and viruses (Pearson correlation followed by Benjamini-Hochberg FDR-correction, P-adjust < 0.1, Fig 2b). 
+
+Module number | Module color
+--------------|---------------
+  MM.0        | MM.grey
+  MM.1        | MM.turquoise 
+  MM.2        | MM.blue 
+  MM.3        | MM.brown
+  MM.4        | MM.yellow
+  MM.5        | MM.green
+  MM.6        | MM.red
+  MM.7        | MM.black
+  MM.8        | MM.pink
+  MM.9        | MM.magenta
+  MM.10       | MM.purple
+  MM.11       | MM.greenyellow
+  MM.1        | MM.tan 
+  MM.13       | MM.salmon
+  MM.14       | MM.cyan
+  MM.15       | MM.midnightblue
+---
+
 
 ### (3)  Identifying important genes, ‘hub-genes’
 The important genes were identified by accounting for two main parameters: Gene Significance and Module Membership (Langfelder and Horvath 2008). The Gene Significance is the correlation between the gene and the trait (the viral load), and the Module Membership is the correlation of the module eigengene and the gene expression. Genes with both high Gene Significance and Module Membership are referred as ‘hub-genes’, as they are expected to have high biological impact on many genes in the vector, and at the same time show high interaction with the viruses. Therefore, these genes may play a role in the vector-virus interaction, and are good candidates for later experimental validation.
 
+#### load data
+```{r load data, message=FALSE, warning=FALSE}
+load("/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/viruses_load_15.rds")
+# change the names of the viruses to match their common name in the literature:
+viruses_load_15 <- viruses_load_15 %>%
+  dplyr::rename("VOV-1" = "VOV_1", "ARV-2"= "ARV_2", "SBV"= "SV", "DWVb"="VDV1/DWVb")
+
+load(file = "/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/Varroa_modules_networkConstruction-auto.RData")
+load(file = "/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/for_modules.rds")
+
+# Define numbers of genes and samples
+nGenes = ncol(for_modules);
+nSamples = nrow(for_modules)
+# Recalculate MEs with color labels 
+MEs0 = moduleEigengenes(for_modules, moduleColors)$eigengenes
+MEs = orderMEs(MEs0)
+```
+
 #### Calculating Gene Significanse (GS)
-```{r Calculating Gene Significanse (GS), eval=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+```{r Calculating Gene Significanse (GS), message=FALSE, warning=FALSE}
 # make a table with the Trait-significance ("GS") for each gene (which is its correlation coefficient, pearson)
 geneTraitSignificance_66 = as.data.frame(cor(for_modules, viruses_load_15, use = "p"));
 GSPvalue_66 = as.data.frame(corPvalueStudent(as.matrix(geneTraitSignificance_66), nSamples));
@@ -47,6 +219,8 @@ GSPadjust_66 <- column_to_rownames(GSPadjust_66, "module")
 #rename the col names by adding the initial "GS." for genesignificance, and "p.GS." for p-value.
 names(geneTraitSignificance_66) = paste("GS.", names(viruses_load_15), sep="");
 names(GSPadjust_66) = paste("pdj.GS.", names(viruses_load_15), sep="");
+head(geneTraitSignificance_66)
+head(GSPadjust_66)
 ```
 
 #### Calculating gene Module-membership (MM)
@@ -84,12 +258,14 @@ MMPadjust_66 <- Padjust %>%
 MMPadjust_66 <- column_to_rownames(MMPadjust_66, "module")  
   
 #change the name of the columns to start with "MM" then the module name
-names(geneModuleMembership_66) = paste("MM", modNames, sep="");
-names(MMPadjust_66) = paste("padj.MM", modNames, sep="");
+names(geneModuleMembership_66) = paste("MM", modNames, sep="")
+names(MMPadjust_66) = paste("padj.MM", modNames, sep="")
+head(geneModuleMembership_66)
+head(MMPadjust_66)
 ```
 
-### Intramodular connectivity
-```{r  Intramodular connectivity, eval=FALSE, include=FALSE}
+#### Intramodular connectivity
+```{r  Intramodular connectivity, message=FALSE, warning=FALSE}
 # We begin by calculating the intramodular connectivity for each gene. (In network literature, connectivity is often referred to as ”degree”.) The function intramodularConnectivity computes the whole network connectivity kTotal, the within module connectivity kWithin, kOut=kTotal-kWithin, and kDiff=kIn-kOut=2*kIN-kTotal
 
 # calculate the correlation between each pair of genes 
@@ -99,6 +275,107 @@ Alldegrees1_66 <- intramodularConnectivity(ADJ1_66, moduleColors)
 head(Alldegrees1_66)
 
 #save it 
-#save(Alldegrees1_66, file = "/results/IntraModCon66.RData")
+#save(Alldegrees1_66, file = "/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/IntraModCon66.rds")
+```
 
+### (4) GO-term enrichment analysis for varroa modules
+
+- Data based on analysis done in [Tehcer et al. (2019)](https://www.nature.com/articles/s42003-019-0606-0)
+[Maeva Techer github varroa-denovo-genomes project](https://github.com/MaevaTecher/varroa-denovo-genomes/blob/master/data/Positive%20selection/Vdesselected1511.csv)
+```{r GO-term enrichment analysis, message=FALSE, warning=FALSE}
+# load the 
+annot.vd <- read.csv("/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/data/VdesGOready2.csv") 
+
+#Preparing the GO frame
+annot.vd2 <- annot.vd %>%
+  mutate(evidence = "IEA") %>%
+  dplyr::select(go_id = GO.ids, evidence, gene = Gene.id)
+
+head(annot.vd2)
+
+goFrame.vd <-GOFrame(annot.vd2, organism = "Vd")
+goAllFrame.vd <-GOAllFrame(goFrame.vd)
+gsc.vd <-GeneSetCollection(goAllFrame.vd, setType = GOCollection())
+
+#Preparing the universe
+universe.vd <- as.character(unique(annot.vd2$gene)) # there's a wired thing in the GSEAGOHyperGParams function, sometimes its required the universe to be "character".
+
+# Preparing the gene set (list of genes in a module) 
+# change "black" to the name of the desired module, in the first line: [moduleColors=="black"], and in the final "write.csv(file = "GO_term_enrichment_**salmon**BP.csv")
+ME <- names(for_modules)[moduleColors=="black"]
+ME_df <- data.frame(gene = ME)
+genes.vd <- unique(ME_df$gene)
+
+params.vd <- GSEAGOHyperGParams(name = "Vd_GO_enrichment",
+                                geneSetCollection = gsc.vd,
+                                geneIds = genes.vd,
+                                universeGeneIds = universe.vd,
+                                ontology = "BP", # change with MF, CC to test all
+                                pvalueCutoff = 0.05,
+                                conditional = F,
+                                testDirection = "over")
+
+over.vd <- hyperGTest(params.vd)
+over.vd
+#summary(over.vd)
+
+GO_enrich.vd <- as.data.frame(summary(over.vd)) %>% 
+  arrange(Pvalue)
+
+# write.csv(GO_enrich.vd, file = "/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/GO_term_black.csv")
+```
+
+All GO-terms of the significantly interacting modules are available as csv files, on the [github project](https://github.com/nurit-eliash/varroa-virus-networks/tree/master/results) 
+
+
+#### Identifying targeted genes for validation (silencing) 
+
+Next, we wish to identify the most interesting and important genes, that we will further validate using RNAi-silencing. 
+these are 'hub-genes' in important modules. 
+
+__The target-genes should:__
+
+* Belong to interesting module (module that significantly interacting with viral load and have relevant GO-terms)
+* Have high Module-Membership (MM)
+* Have high Gene-Trait Significance (GS)
+* ? Have high intramodular connectivity (kWithin)
+```{r Identifying targeted genes for validation, message=FALSE, warning=FALSE}
+# First, we gonna choose the interesting modules:
+# Nine modules have significant interactions with the viral load, of at least one virus: 1, 3, 13, 5, 10, 6, 9, 14 and 7. 
+# of these modules, four have relevant GO-terms: 3, 6, 9 and 10. 
+# so, we gonna make a table with the gene, its module, MM, kWithin, GS, gene annotation 
+
+hub_genes_0 <- data.frame(
+  moduleCol = moduleColors,
+  geneModuleMembership_66,
+  MMPadjust_66, 
+  Alldegrees1_66$kWithin,
+  geneTraitSignificance_66,
+  GSPadjust_66) %>%
+  dplyr::select(c(moduleCol, MMpurple, padj.MMpurple, MMmagenta, padj.MMmagenta, MMred, padj.MMred, MMbrown, padj.MMbrown, Alldegrees1_66.kWithin, GS.DWVa, pdj.GS.DWVa, GS.ARV.2, pdj.GS.ARV.2, GS.VDV2, pdj.GS.VDV2)) %>%
+  dplyr::filter(moduleCol %in% c("purple", "magenta", "red", "brown")) %>%
+  dplyr::rename(kWithin = Alldegrees1_66.kWithin) %>%
+  rownames_to_column("genes")
+
+# add the modules' numbers
+moduleNum <- as.character(c(0:15))
+moduleCol <- as.character(c("grey", "turquoise", "blue", "brown", "yellow", "green", "red","black", "pink", "magenta", "purple", "greenyellow", "tan","salmon", "cyan","midnightblue"))
+moduleCol_Num <- data.frame(moduleNum, moduleCol)
+
+hub_genes_1 <- left_join(moduleCol_Num, hub_genes_0, by =  "moduleCol") %>%
+  na.omit()
+  
+# add gene annotation:
+# load the annotation file:
+annot_varroa <- read_csv("/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/data/annot_varroa.csv", 
+         col_types = cols_only("Protein Name" = col_character(), "Accession" = col_character(), "GeneID" = col_character())) %>%
+  dplyr::rename(genes = GeneID)
+
+hub_genes <- left_join(annot_varroa, hub_genes_1, by = "genes") %>%
+  na.omit() %>% 
+  dplyr::select(c(genes, moduleCol, moduleNum, Accession, "Protein Name", kWithin, MMpurple, padj.MMpurple, MMmagenta, padj.MMmagenta, MMred, padj.MMred, MMbrown, padj.MMbrown, GS.DWVa, pdj.GS.DWVa, GS.ARV.2, pdj.GS.ARV.2, GS.VDV2, pdj.GS.VDV2))
+
+head(hub_genes)
+# save the final table of the genes in modules 3, 6, 9 and 10
+#write_csv(hub_genes, "/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/hub_genes.csv")
 ```
