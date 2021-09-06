@@ -604,6 +604,100 @@ genesModule.10 <- left_join(annot_varroa, genePurple, by = "genes") %>%
 write_csv(genesModule.10, "/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/genesModule.10.csv")
 ```
 
+for module 9
+```{r Identifying genes with high Module-membership in module 9 and adding gene annotations, eval=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+geneMagenta = data.frame(
+  moduleCol = moduleColors,
+  geneModuleMembership_66,
+  MMPadjust_66) %>%
+  dplyr::select(c(moduleCol, MMmagenta, padj.MMmagenta)) %>%
+  dplyr::filter(moduleCol == "magenta") %>%
+  mutate(moduleNum = "Module.9") %>%
+  rownames_to_column("genes")
+
+# add gene annotation:
+# load the annotation file:
+annot_varroa <- read_csv("/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/data/annot_varroa.csv", col_names = TRUE, )
+
+# remove the "LOC" from the gene name
+annot_varroa$Locus <- str_replace(annot_varroa$Locus, "LOC", '')
+# change the col name to "genes", so it will the same as in the "overlap" table
+colnames(annot_varroa)[which(names(annot_varroa) == "Locus")] <- "genes"
+head(annot_varroa)
+
+genesModule.9 <- left_join(annot_varroa, geneMagenta, by = "genes") %>%
+  na.omit() %>% 
+  dplyr::select("genes", "moduleNum", "MMmagenta", "padj.MMmagenta", "Accession", "Protein Name") %>%
+  dplyr::rename(c(MM = MMmagenta, MMpadj = padj.MMmagenta)) 
+# there are total of 263 matching annotations, as some of the genes have a few isoforms.
+
+# save the final table of the genes in module 9
+write_csv(genesModule.9, "/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/genesModule.9.csv")
+```
+
+for module 6- red
+```{r Identifying genes with high Module-membership in module 6 and adding gene annotations, eval=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+geneRed = data.frame(
+  moduleCol = moduleColors,
+  geneModuleMembership_66,
+  MMPadjust_66) %>%
+  dplyr::select(c(moduleCol, MMred, padj.MMred)) %>%
+  dplyr::filter(moduleCol == "red") %>%
+  mutate(moduleNum = "Module.6") %>%
+  rownames_to_column("genes")
+
+# add gene annotation:
+# load the annotation file:
+annot_varroa <- read_csv("/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/data/annot_varroa.csv", col_names = TRUE, )
+
+# remove the "LOC" from the gene name
+annot_varroa$Locus <- str_replace(annot_varroa$Locus, "LOC", '')
+# change the col name to "genes", so it will the same as in the "overlap" table
+colnames(annot_varroa)[which(names(annot_varroa) == "Locus")] <- "genes"
+head(annot_varroa)
+
+genesModule.6 <- left_join(annot_varroa, geneRed, by = "genes") %>%
+  na.omit() %>% 
+  dplyr::select("genes", "moduleNum", "MMred", "padj.MMred", "Accession", "Protein Name") %>%
+  dplyr::rename(c(MM = MMred, MMpadj = padj.MMred)) 
+# there are total of 263 matching annotations, as some of the genes have a few isoforms.
+
+# save the final table of the genes in module 6
+write_csv(genesModule.6, "/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/genesModule.6.csv")
+```
+
+
+for module 3- brown
+```{r Identifying genes with high Module-membership in module 3 and adding gene annotations, eval=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+geneBrown = data.frame(
+  moduleCol = moduleColors,
+  geneModuleMembership_66,
+  MMPadjust_66) %>%
+  dplyr::select(c(moduleCol, MMbrown, padj.MMbrown)) %>%
+  dplyr::filter(moduleCol == "brown") %>%
+  mutate(moduleNum = "Module.3") %>%
+  rownames_to_column("genes")
+
+# add gene annotation:
+# load the annotation file:
+annot_varroa <- read_csv("/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/data/annot_varroa.csv", col_names = TRUE, )
+
+# remove the "LOC" from the gene name
+annot_varroa$Locus <- str_replace(annot_varroa$Locus, "LOC", '')
+# change the col name to "genes", so it will the same as in the "overlap" table
+colnames(annot_varroa)[which(names(annot_varroa) == "Locus")] <- "genes"
+head(annot_varroa)
+
+genesModule.3 <- left_join(annot_varroa, geneBrown, by = "genes") %>%
+  na.omit() %>% 
+  dplyr::select("genes", "moduleNum", "MMbrown", "padj.MMbrown", "Accession", "Protein Name") %>%
+  dplyr::rename(c(MM = MMbrown, MMpadj = padj.MMbrown)) 
+# there are total of 263 matching annotations, as some of the genes have a few isoforms.
+
+# save the final table of the genes in module 6
+write_csv(genesModule.3, "/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/genesModule.3.csv")
+```
+
 *** NOT INCLUDED ***
 #### Calculating Gene Significanse (GS)
 ```{r Calculating Gene Significanse (GS), eval=FALSE, message=FALSE, warning=FALSE, include=FALSE}
