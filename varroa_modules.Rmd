@@ -833,7 +833,7 @@ using the absolute MM value, and the signed GS
 ```{r eval=F, echo=T}
 sizeGrWindow(8,6)
 par(mfrow=c(2,2))
-module = "pink"
+module = "red"
 virus = "VDV2"
 column = match(module, modNames);
 column1 = match(virus, virusNames);
