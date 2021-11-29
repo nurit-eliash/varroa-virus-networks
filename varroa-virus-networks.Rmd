@@ -453,9 +453,9 @@ MEs0 = moduleEigengenes(for_modules, moduleColors)$eigengenes
 MEs = orderMEs(MEs0)
 
 # correlate the modules eigengenes (MEs) with the viral load (viruses_load_15)
-moduleTraitCor = cor(MEs, viruses_load_15, use = "p") %>%
+moduleTraitCor_66 = cor(MEs, viruses_load_15, use = "p") %>%
   as.matrix()
-moduleTraitPvalue = corPvalueStudent(moduleTraitCor, nSamples)
+moduleTraitPvalue = corPvalueStudent(moduleTraitCor_66, nSamples)
 
 ### Controlling the false discovery rate: Benjamini–Hochberg procedure ###
 # using p.adjust function, for all comparisons, 15 modules and 15 viruses (m=225). 
