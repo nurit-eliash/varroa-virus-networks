@@ -76,6 +76,7 @@ library("hrbrthemes")
 library("ggthemes")
 library("RColorBrewer")
 library("naniar")
+library("kableExtra")
 knitr::opts_chunk$set(echo = TRUE)
 setwd("/Users/nuriteliash/Documents/GitHub/varroa-virus-networks") #set the directory as the local GitHub local repository
 ```
@@ -338,7 +339,11 @@ virusAbundCor_66 <- corrplot2(
 ```
 
 ## Gene network analysis
-We used a network analysis approach to identify groups of genes that share a similar expression pattern across a large set of available varroa transcriptomic data (RNAseq). To construct the gene-network, a weighted gene co-expression analysis was carried out using the WGCNA package in R, following the authors’ tutorial (Langfelder and Horvath 2016; Langfelder and Horvath 2008) . The gene network analysis included 4 main steps: (1) Network construction and module detection; (2) Correlating modules to external information, the varroa viral load; (3) Identifying important genes, ‘hub-genes’; and (4) GO-term enrichment analysis for varroa modules which interact with the viral load.
+We used a network analysis approach to identify groups of genes that share a similar expression pattern across a large set of available varroa transcriptomic data (RNAseq). To construct the gene-network, a weighted gene co-expression analysis was carried out using the WGCNA package in R, following the authors’ tutorial (Langfelder and Horvath 2016; Langfelder and Horvath 2008). The gene network analysis included 4 main steps: 
+1. Network construction and module detection 
+2. Correlating modules to external information, the varroa viral load 
+3. Identifying important genes, ‘hub-genes’ 
+4. GO-term enrichment analysis for varroa modules which interact with the viral load
 
 A gene co-expression network identify genes that interact with one another based on common expression profiles (Barabási and Oltvai 2004). Groups of co-expressed genes that have similar expression patterns across samples are identified using hierarchical clustering and are placed in gene ‘modules’ (Miller, Horvath, and Geschwind 2010). Weighted gene co-expression analysis was conducted using the WGCNA package in R (Langfelder and Horvath 2008).
 
@@ -741,9 +746,9 @@ names(GSPadjust_66) = paste("pdj.GS.", names(viruses_load_15), sep="");
 ### (4) GO-term enrichment analysis for varroa modules
 
 - Data based on analysis done in [Tehcer et al. (2019)](https://www.nature.com/articles/s42003-019-0606-0)
-[Maeva Techer github varroa-denovo-genomes project](https://github.com/MaevaTecher/varroa-denovo-genomes/blob/master/data/Positive%20selection/Vdesselected1511.csv)
+
 ```{r GO-term enrichment analysis, message=FALSE, warning=FALSE}
-# load the 
+# load the annotation table of Varroa destructor
 annot.vd <- read.csv("/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/data/VdesGOready2.csv") 
 
 #Preparing the GO frame
@@ -787,8 +792,92 @@ GO_enrich.vd <- as.data.frame(summary(over.vd)) %>%
 # write.csv(GO_enrich.vd, file = "/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/GO_term_black.csv")
 ```
 
-All GO-terms of the significantly interacting modules are available as csv files, on the [github project](https://github.com/nurit-eliash/varroa-virus-networks/tree/master/results) 
----
+All GO-terms of the significantly interacting modules are also available as csv files, on the [github project result folder](https://github.com/nurit-eliash/varroa-virus-networks/tree/master/results) 
+
+#### Significant GO-terms of the interacting modules {.tabset}
+
+##### Module 1
+```{r GO-terms module number 1, message=FALSE, warning=FALSE}
+GO_term_turquoise <- read.csv("/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/GO_term_turquoise.csv")
+GO_term_turquoise %>%
+  kbl() %>%
+  kable_styling(bootstrap_options = "striped", full_width = F, position = "left") %>%
+  kable_paper() %>%
+  scroll_box(width = "500px", height = "200px")
+```
+##### Module 3
+```{r GO-terms module number 3, message=FALSE, warning=FALSE}
+GO_term_brown <- read.csv("/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/GO_term_brown.csv")
+GO_term_brown %>%
+  kbl() %>%
+  kable_styling(bootstrap_options = "striped", full_width = F, position = "left") %>%
+  kable_paper() %>%
+  scroll_box(width = "500px", height = "200px")
+```
+##### Module 5
+```{r GO-terms module number 5, message=FALSE, warning=FALSE}
+GO_term_green <- read.csv("/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/GO_term_green.csv")
+GO_term_green %>%
+  kbl() %>%
+  kable_styling(bootstrap_options = "striped", full_width = F, position = "left") %>%
+  kable_paper() %>%
+  scroll_box(width = "500px", height = "200px")
+```
+##### Module 6
+```{r GO-terms module number 6, message=FALSE, warning=FALSE}
+GO_term_red <- read.csv("/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/GO_term_red.csv")
+GO_term_red %>%
+  kbl() %>%
+  kable_styling(bootstrap_options = "striped", full_width = F, position = "left") %>%
+  kable_paper() %>%
+  scroll_box(width = "500px", height = "200px")
+```
+##### Module 7
+```{r GO-terms module number 7, message=FALSE, warning=FALSE}
+GO_term_black <- read.csv("/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/GO_term_black.csv")
+GO_term_black %>%
+  kbl() %>%
+  kable_styling(bootstrap_options = "striped", full_width = F, position = "left") %>%
+  kable_paper() %>%
+  scroll_box(width = "500px", height = "200px")
+```
+##### Module 9
+```{r GO-terms module number 9, message=FALSE, warning=FALSE}
+GO_term_magenta <- read.csv("/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/GO_term_magenta.csv")
+GO_term_magenta %>%
+  kbl() %>%
+  kable_styling(bootstrap_options = "striped", full_width = F, position = "left") %>%
+  kable_paper() %>%
+  scroll_box(width = "500px", height = "200px")
+```
+##### Module 10
+```{r GO-terms module number 10, message=FALSE, warning=FALSE}
+GO_term_purple <- read.csv("/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/GO_term_purple.csv")
+GO_term_purple %>%
+  kbl() %>%
+  kable_styling(bootstrap_options = "striped", full_width = F, position = "left") %>%
+  kable_paper() %>%
+  scroll_box(width = "500px", height = "200px")
+```
+##### Module 13
+```{r GO-terms module number 13, message=FALSE, warning=FALSE}
+GO_term_salmon <- read.csv("/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/GO_term_salmon.csv")
+GO_term_salmon %>%
+  kbl() %>%
+  kable_styling(bootstrap_options = "striped", full_width = F, position = "left") %>%
+  kable_paper() %>%
+  scroll_box(width = "500px", height = "200px")
+```
+##### Module 14
+```{r GO-terms module number 14, message=FALSE, warning=FALSE}
+GO_term_cyan <- read.csv("/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/GO_term_cyan.csv")
+GO_term_cyan %>%
+  kbl() %>%
+  kable_styling(bootstrap_options = "striped", full_width = F, position = "left") %>%
+  kable_paper() %>%
+  scroll_box(width = "500px", height = "200px")
+```
+
 
 ## Correlating virus interaction and virus-varroa interactions
 
