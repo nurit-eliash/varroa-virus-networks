@@ -4,6 +4,7 @@ author: "Nurit Eliash and Sasha Mikheyev"
 date: "1/22/2020"
 output:
   html_document:
+    code_folding: hide
     theme: paper
     toc: yes
     toc_depth: 5
@@ -13,7 +14,7 @@ output:
 ---
 <style type="text/css">
   body{
-  font-size: 12pt;
+  font-size: 14pt;
 }
 </style>
 
@@ -339,13 +340,15 @@ virusAbundCor_66 <- corrplot2(
 ```
 
 ## Gene network analysis
-We used a network analysis approach to identify groups of genes that share a similar expression pattern across a large set of available varroa transcriptomic data (RNAseq). To construct the gene-network, a weighted gene co-expression analysis was carried out using the WGCNA package in R, following the authors’ tutorial (Langfelder and Horvath 2016; Langfelder and Horvath 2008). The gene network analysis included 4 main steps: 
+We used a network analysis approach to identify groups of genes that share a similar expression pattern across a large set of available varroa transcriptomic data (RNAseq). To construct the gene-network, a weighted gene co-expression analysis was carried out using the WGCNA package in R, following the authors’ tutorial ([Langfelder and Horvath 2016](https://horvath.genetics.ucla.edu/html/CoexpressionNetwork/Rpackages/WGCNA/Tutorials/); [Langfelder and Horvath 2008] (https://bmcbioinformatics.biomedcentral.com/articles/10.1186/1471-2105-9-559)). 
+The gene network analysis included 4 main steps: 
+
 1. Network construction and module detection 
 2. Correlating modules to external information, the varroa viral load 
 3. Identifying important genes, ‘hub-genes’ 
 4. GO-term enrichment analysis for varroa modules which interact with the viral load
 
-A gene co-expression network identify genes that interact with one another based on common expression profiles (Barabási and Oltvai 2004). Groups of co-expressed genes that have similar expression patterns across samples are identified using hierarchical clustering and are placed in gene ‘modules’ (Miller, Horvath, and Geschwind 2010). Weighted gene co-expression analysis was conducted using the WGCNA package in R (Langfelder and Horvath 2008).
+A gene co-expression network is a a systems-biology approach, based on the assumption that biological functions are carried out in a modular manner ([Barabási and Oltvai 2004](http://www.cs.cmu.edu/~epxing/Class/10810-06/readings/Barabasi_Oltvai_04.pdf)). We identify co-expressed genes that have similar expression patterns across samples using hierarchical clustering and place them in gene groups, called ‘modules’ ([Stuart et al. 2003](https://www.science.org/doi/10.1126/science.1087447)). 
 
 ### (1) Network construction and module detection
 Following the steps in WGCNA tutorial: "Automatic, one-step network construction and module detection"
@@ -578,7 +581,7 @@ names(geneModuleMembership_66) = paste("MM", modNames, sep="");
 names(MMPadjust_66) = paste("padj.MM", modNames, sep="");
 ```
 
-#### Identifying genes with high Module-membership in module 10 (the purple module) and adding gene annotations
+##### Identifying genes with high Module-membership in module 10 (the purple module) and adding gene annotations
 ```{r Identifying genes with high Module-membership in module 10 and adding gene annotations, message=FALSE, warning=FALSE}
 genePurple = data.frame(
   moduleCol = moduleColors,
@@ -609,7 +612,7 @@ genesModule.10 <- left_join(annot_varroa, genePurple, by = "genes") %>%
 write_csv(genesModule.10, "/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/genesModule.10.csv")
 ```
 
-for module 9
+##### Identifying genes with high Module-membership in module 9
 ```{r Identifying genes with high Module-membership in module 9 and adding gene annotations, eval=FALSE, message=FALSE, warning=FALSE, include=FALSE}
 geneMagenta = data.frame(
   moduleCol = moduleColors,
@@ -640,7 +643,7 @@ genesModule.9 <- left_join(annot_varroa, geneMagenta, by = "genes") %>%
 write_csv(genesModule.9, "/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/genesModule.9.csv")
 ```
 
-for module 6- red
+##### Identifying genes with high Module-membership in module 6
 ```{r Identifying genes with high Module-membership in module 6 and adding gene annotations, eval=FALSE, message=FALSE, warning=FALSE, include=FALSE}
 geneRed = data.frame(
   moduleCol = moduleColors,
@@ -672,7 +675,7 @@ write_csv(genesModule.6, "/Users/nuriteliash/Documents/GitHub/varroa-virus-netwo
 ```
 
 
-for module 3- brown
+##### Identifying genes with high Module-membership in module 3
 ```{r Identifying genes with high Module-membership in module 3 and adding gene annotations, eval=FALSE, message=FALSE, warning=FALSE, include=FALSE}
 geneBrown = data.frame(
   moduleCol = moduleColors,
@@ -703,9 +706,9 @@ genesModule.3 <- left_join(annot_varroa, geneBrown, by = "genes") %>%
 write_csv(genesModule.3, "/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/genesModule.3.csv")
 ```
 
-*** NOT INCLUDED ***
 #### Calculating Gene Significanse (GS)
 ```{r Calculating Gene Significanse (GS), eval=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+# this part is not included in the html output
 # make a table with the Trait-significance ("GS") for each gene (which is its correlation coefficient, pearson)
 geneTraitSignificance_66 = as.data.frame(cor(for_modules, viruses_load_15, use = "p"));
 GSPvalue_66 = as.data.frame(corPvalueStudent(as.matrix(geneTraitSignificance_66), nSamples));
@@ -803,7 +806,7 @@ GO_term_turquoise %>%
   kbl() %>%
   kable_styling(bootstrap_options = "striped", full_width = F, position = "left") %>%
   kable_paper() %>%
-  scroll_box(width = "500px", height = "200px")
+  scroll_box(width = "800px", height = "200px")
 ```
 ##### Module 3
 ```{r GO-terms module number 3, message=FALSE, warning=FALSE}
@@ -812,7 +815,7 @@ GO_term_brown %>%
   kbl() %>%
   kable_styling(bootstrap_options = "striped", full_width = F, position = "left") %>%
   kable_paper() %>%
-  scroll_box(width = "500px", height = "200px")
+  scroll_box(width = "800px", height = "200px")
 ```
 ##### Module 5
 ```{r GO-terms module number 5, message=FALSE, warning=FALSE}
@@ -821,7 +824,7 @@ GO_term_green %>%
   kbl() %>%
   kable_styling(bootstrap_options = "striped", full_width = F, position = "left") %>%
   kable_paper() %>%
-  scroll_box(width = "500px", height = "200px")
+  scroll_box(width = "800px", height = "200px")
 ```
 ##### Module 6
 ```{r GO-terms module number 6, message=FALSE, warning=FALSE}
@@ -830,7 +833,7 @@ GO_term_red %>%
   kbl() %>%
   kable_styling(bootstrap_options = "striped", full_width = F, position = "left") %>%
   kable_paper() %>%
-  scroll_box(width = "500px", height = "200px")
+  scroll_box(width = "800px", height = "200px")
 ```
 ##### Module 7
 ```{r GO-terms module number 7, message=FALSE, warning=FALSE}
@@ -839,7 +842,7 @@ GO_term_black %>%
   kbl() %>%
   kable_styling(bootstrap_options = "striped", full_width = F, position = "left") %>%
   kable_paper() %>%
-  scroll_box(width = "500px", height = "200px")
+  scroll_box(width = "800px", height = "200px")
 ```
 ##### Module 9
 ```{r GO-terms module number 9, message=FALSE, warning=FALSE}
@@ -848,7 +851,7 @@ GO_term_magenta %>%
   kbl() %>%
   kable_styling(bootstrap_options = "striped", full_width = F, position = "left") %>%
   kable_paper() %>%
-  scroll_box(width = "500px", height = "200px")
+  scroll_box(width = "800px", height = "200px")
 ```
 ##### Module 10
 ```{r GO-terms module number 10, message=FALSE, warning=FALSE}
@@ -857,7 +860,7 @@ GO_term_purple %>%
   kbl() %>%
   kable_styling(bootstrap_options = "striped", full_width = F, position = "left") %>%
   kable_paper() %>%
-  scroll_box(width = "500px", height = "200px")
+  scroll_box(width = "800px", height = "200px")
 ```
 ##### Module 13
 ```{r GO-terms module number 13, message=FALSE, warning=FALSE}
@@ -866,7 +869,7 @@ GO_term_salmon %>%
   kbl() %>%
   kable_styling(bootstrap_options = "striped", full_width = F, position = "left") %>%
   kable_paper() %>%
-  scroll_box(width = "500px", height = "200px")
+  scroll_box(width = "800px", height = "200px")
 ```
 ##### Module 14
 ```{r GO-terms module number 14, message=FALSE, warning=FALSE}
@@ -875,7 +878,7 @@ GO_term_cyan %>%
   kbl() %>%
   kable_styling(bootstrap_options = "striped", full_width = F, position = "left") %>%
   kable_paper() %>%
-  scroll_box(width = "500px", height = "200px")
+  scroll_box(width = "800px", height = "200px")
 ```
 
 
