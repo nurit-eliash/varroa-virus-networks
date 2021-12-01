@@ -3,7 +3,7 @@
 This project aims to understand how vector gene expression interacts with its viral load.
 ### doi:___
 
-### Supplementary material that includes code, original figures and tables can be found [here](https://github.com/nurit-eliash/varroa-virus-networks/).
+### Supplementary material that includes code, original figures and tables can be found [here](https://nurit-eliash.github.io/varroa-virus-networks/).
 
 ### Abstract
 ___
