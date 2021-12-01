@@ -1,4 +1,9 @@
-# Analyzing gene co-expression between Varroa and bee viruses
+# Interactions with the vector shape viral communities
+## Nurit Eliash, Miyuki Suenaga and Alexander Mikheyev
+This project aims to understand how vector gene expression interacts with its viral load.
+### doi:___
 
-This project aims to understand how viral gene expression interacts with that of the vector.
+### Supplementary material that includes code, original figures and tables can be found [here](https://github.com/nurit-eliash/varroa-virus-networks/).
 
+### Abstract
+___
