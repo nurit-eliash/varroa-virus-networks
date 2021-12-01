@@ -5,7 +5,7 @@ date: "1/22/2020"
 output:
   html_document:
     code_folding: hide
-    theme: paper
+    theme: cerulean
     toc: yes
     toc_depth: 5
     toc_float:
@@ -14,11 +14,14 @@ output:
 ---
 <style type="text/css">
   body{
-  font-size: 14pt;
+  font-size: 12pt;
 }
 </style>
 
-In this study we investigated virus-virus and vector-virus interactions by combining two approaches: (1) meta-transciptomic analysis and (2) gene-silencing experiments. 
+In this study we investigated virus-virus and vector-virus interactions by combining two approaches: 
+
+(1) meta-transciptomic analysis, and 
+(2) gene-silencing experiments. 
 
 In the meta-transcriptomic analysis we looked at the overall viral landscape in the different libraries, detected vector modules (co-expressing genes using gene-network analysis), and correlated the viruses’ abundance to the vector modules. Last, we tested if the virus abundance matrix can predict the virus-vector interaction.
 
@@ -136,7 +139,7 @@ final_gene_tpm_71 <- spread(gene_tpm_collps_71, key = "library", value = "gene_t
 
 Next, we perform Principle Component Analysis (PCA) on varroa genes, to detect outlierd libraries 
 
-### Detect outlier libraries based on PCA
+### Figure S1. Detect outlier libraries based on PCA
 ```{r Detect outlier based on PCA, message=FALSE, warning=FALSE}
 # load the table
 load(file = "/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/final_gene_tpm_71.rds")
@@ -218,7 +221,7 @@ head(viruses_load)
 #save(viruses_load, file = "/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/viruses_load.rds")
 ```
 
-### Vizualize viruses distribution and abundance in a heat-map
+### Figure 1. Vizualize viruses distribution and abundance in a heat-map
 ```{r Heat-map of viruses loads per library (log10(tpm)), fig.cap = "Figure 1. Viral load is diverse across the different varroa libraries. Values are log10 transformed of the reads’ TPM (transcript per millions). Zero values are marked in grey (i.e., none of the reads in this library mapped to this virus). The viruses’ names are abbreviated as described in Table 1.  More information on the viruses’, accession numbers, genome length, references and etc. are available in supp table S1. Members of the Iflavirus family are the most prevalent, yet while some viruses are homogenous across libraries (VDV2), others are highly diverse (e.g. DWVa and DWVb).", fig.width = 10, fig.height = 13, message=FALSE, warning=FALSE}
 # (3) heat-map of viruses loads (log10(tpm)) per library
 # load the former virus data
@@ -264,7 +267,7 @@ ggplot(data = virus_abund, mapping = aes(x = description,
   theme(axis.title = element_text(size = 20))
 ```
 
-### Virus correlation matrix
+### Figure 2a. Virus correlation matrix
 the viral correlation analysis includes 66 libraries, and 15 viruses (viruses that appear in at least one of the libraries)
 ```{r viral correlation, fig.cap = "Figure 2a. Correlation between viruses’ loads. P-values of the Pearson coefficient are adjusted according to FDR-correction; correlation significance marked by (*) 0.1 < Padjust < 0.01; (**) Padjust < 0.01. All viruses’ loads are transformed by log10 of the (TPM), Transcripts Per Million." , message=FALSE, warning=FALSE}
 
@@ -353,7 +356,7 @@ A gene co-expression network is a a systems-biology approach, based on the assum
 ### (1) Network construction and module detection
 Following the steps in WGCNA tutorial: "Automatic, one-step network construction and module detection"
 
-#### Choosing the soft-thresholding power: analysis of network topology
+#### Figure S2a. Choosing the soft-thresholding power: analysis of network topology
 For the varroa Gene network analysis we gonna use the "for_module" file created in the chunk "PCA" of section "Load data and library filtration". This data frame is the initial input for all the WGCNA, and contains the varroa genes TPM, where columns are genes' ID and rows are the RNAseq libraries   
 ```{r Choosing the soft-thresholding power, message=FALSE, warning=FALSE}
 
@@ -368,7 +371,7 @@ powers = c(c(1:10), seq(from = 12, to=25, by=2))
 sft = pickSoftThreshold(for_modules, powerVector = powers, verbose = 5)
 ```
 
-```{r sft plot,fig.cap = "Figure S2.  Network construction using 10,247 genes of 66 SRA varroa libraries.  a. picking soft threshold.", message=FALSE, warning=FALSE,fig.show="hold", out.width="50%"}
+```{r sft plot,fig.cap = "Figure S2a.  Network construction using 10,247 genes of 66 SRA varroa libraries.  Picking soft threshold.", message=FALSE, warning=FALSE,fig.show="hold", out.width="50%"}
 # Plot the results:
 sft_df <- data.frame(
   Power = sft$fitIndices[,1],
@@ -398,7 +401,7 @@ pSI
 pMC
 ```
 
-#### Constructing the gene network and identifying modules is now a simple function call:
+#### Figure S2b. Constructing the gene network and identifying modules is now a simple function call:
 ```{r Constructing the gene network, message=FALSE, warning=FALSE, eval=FALSE}
 
 net = blockwiseModules(for_modules, power = 12,
@@ -418,7 +421,7 @@ Based on the analysis of network topology, for the construction of the network w
 
 The hierarchical clustering dendrogram (tree) used for the module identification is returned in net$dendrograms[[1]];
 The dendrogram can be displayed together with the color assignment using the following code
-```{r Hierarchical clustering dendrogram, fig.cap = "Figure S2. Network construction using 10,247 genes of 66 SRA varroa libraries. b. Hierarchical clustering dendrogram using merge cut height of 25%, revealing 15 co-expressed genes modules. Each branch of the dendrogram represents a single gene, and the colored bar below denotes its corresponding module, as annotated in the legend to the right. The dendrogram height is the distance between genes.", message=FALSE, warning=FALSE}
+```{r Hierarchical clustering dendrogram, fig.cap = "Figure S2b. Network construction using 10,247 genes of 66 SRA varroa libraries. Hierarchical clustering dendrogram using merge cut height of 25%, revealing 15 co-expressed genes modules. Each branch of the dendrogram represents a single gene, and the colored bar below denotes its corresponding module, as annotated in the legend to the right. The dendrogram height is the distance between genes.", message=FALSE, warning=FALSE}
 net <- readRDS("/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/net.rds")
 
 # Convert labels to colors for plotting
@@ -439,7 +442,7 @@ geneTree = net$dendrograms[[1]];
 #save(MEs, moduleLabels, moduleColors, geneTree, file = "/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/Varroa_modules_networkConstruction-auto.RData")
 ```
 
-### (2) Correlating modules to viral load
+### (2) Figure 2b. Correlating modules to viral load
 To test if the varroa modules interact with the different viruses it carries, we correlated the module eigengenes to the viruses’ load (log10TPM). We used Pearson correlation method and adjusted the p-values for multiple comparisons using the Benjamini–Hochberg method to control the false discovery rate (Benjamini and Hochberg 1995) (Fig 2b). 
 ```{r Quantifying module–trait associations,  message=FALSE, warning=FALSE}
 # For correlating varroa modules to viral load, we gonna use the table of 15 viruses saved in chunk "viral correlation", in section "viral correlation matrix", and correlated these to the varroa modules eigengenes found in the previous chunk. 
@@ -748,7 +751,7 @@ names(GSPadjust_66) = paste("pdj.GS.", names(viruses_load_15), sep="");
 
 ### (4) GO-term enrichment analysis for varroa modules
 
-- Data based on analysis done in [Tehcer et al. (2019)](https://www.nature.com/articles/s42003-019-0606-0)
+Analysis based on [Tehcer et al. (2019)](https://www.nature.com/articles/s42003-019-0606-0)
 
 ```{r GO-term enrichment analysis, message=FALSE, warning=FALSE}
 # load the annotation table of Varroa destructor
@@ -759,7 +762,7 @@ annot.vd2 <- annot.vd %>%
   mutate(evidence = "IEA") %>%
   dplyr::select(go_id = GO.ids, evidence, gene = Gene.id)
 
-head(annot.vd2)
+#head(annot.vd2)
 
 goFrame.vd <-GOFrame(annot.vd2, organism = "Vd")
 goAllFrame.vd <-GOAllFrame(goFrame.vd)
@@ -767,7 +770,7 @@ gsc.vd <-GeneSetCollection(goAllFrame.vd, setType = GOCollection())
 
 #Preparing the universe
 universe.vd <- as.character(unique(annot.vd2$gene)) # there's a wired thing in the GSEAGOHyperGParams function, sometimes its required the universe to be "character".
-head(universe.vd)
+#head(universe.vd)
 
 # Preparing the gene set (list of genes in a module) 
 # change "black" to the name of the desired module, in the first line: [moduleColors=="black"], and in the final "write.csv(file = "GO_term_enrichment_**salmon**BP.csv")
@@ -786,7 +789,7 @@ params.vd <- GSEAGOHyperGParams(name = "Vd_GO_enrichment",
                                 testDirection = "over")
 
 over.vd <- hyperGTest(params.vd)
-over.vd
+#over.vd
 #summary(over.vd)
 
 GO_enrich.vd <- as.data.frame(summary(over.vd)) %>% 
@@ -882,7 +885,7 @@ GO_term_cyan %>%
 ```
 
 
-## Correlating virus interaction and virus-varroa interactions
+## Figure 2c. Correlating virus interaction and virus-varroa interactions
 
 To test if we can predict the virus-varroa interaction given the virus abundance, we used Mantel-test for correlation between two distance-matrices (Mantel 1967). 
 ```{r Mantel-test for correlation between two distance-matrices (age library, and vegan library) , message=FALSE, warning=FALSE}
