@@ -23,7 +23,9 @@ In this study we investigated virus-virus and vector-virus interactions by combi
 (1) meta-transciptomic analysis, and 
 (2) gene-silencing experiments. 
 
-In the meta-transcriptomic analysis we looked at the overall viral landscape in the different libraries, detected vector modules (co-expressing genes using gene-network analysis), and correlated the viruses’ abundance to the vector modules. Last, we tested if the virus abundance matrix can predict the virus-vector interaction.
+In the following code pipeline we present the (1) meta-transcriptomic analysis.
+
+Here we looked at the overall viral landscape in the different libraries, detected vector modules (co-expressing genes using gene-network analysis), and correlated the viruses’ abundance to the vector modules. Last, we tested if the virus abundance matrix can predict the virus-vector interaction.
 
 In this R markdown document we present the meta-transcriptomic analysis step by step in a way that can be reproduced using the input files available on the  [GitHub web-page](https://github.com/nurit-eliash/varroa-virus-networks).
 The following chunks are ordered as the sections in the Materials and Methods of the manuscript "Vector-virus interactions in multi-viral infection", [Eliash et al. (___)](DOI:___). All of the reffered tables and figures can be found in the Manuscript. 
