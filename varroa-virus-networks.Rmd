@@ -141,7 +141,7 @@ final_gene_tpm_71 <- spread(gene_tpm_collps_71, key = "library", value = "gene_t
 
 Next, we perform Principle Component Analysis (PCA) on varroa genes, to detect outlierd libraries 
 
-### Figure S1. Detect outlier libraries based on PCA
+### Detect outlier libraries based on PCA (Figure S2)
 ```{r Detect outlier based on PCA, message=FALSE, warning=FALSE}
 # load the table
 load(file = "/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/final_gene_tpm_71.rds")
@@ -358,7 +358,7 @@ A gene co-expression network is a a systems-biology approach, based on the assum
 ### (1) Network construction and module detection
 Following the steps in WGCNA tutorial: "Automatic, one-step network construction and module detection"
 
-#### Figure S2a. Choosing the soft-thresholding power: analysis of network topology
+#### Choosing the soft-thresholding power: analysis of network topology (Figure S1a)
 For the varroa Gene network analysis we gonna use the "for_module" file created in the chunk "PCA" of section "Load data and library filtration". This data frame is the initial input for all the WGCNA, and contains the varroa genes TPM, where columns are genes' ID and rows are the RNAseq libraries   
 ```{r Choosing the soft-thresholding power, message=FALSE, warning=FALSE}
 
@@ -403,7 +403,7 @@ pSI
 pMC
 ```
 
-#### Figure S2b. Constructing the gene network and identifying modules is now a simple function call:
+#### Constructing the gene network and identifying modules is now a simple function call: (Figure S1b)
 ```{r Constructing the gene network, message=FALSE, warning=FALSE, eval=FALSE}
 
 net = blockwiseModules(for_modules, power = 12,
