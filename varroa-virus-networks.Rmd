@@ -751,7 +751,7 @@ names(GSPadjust_66) = paste("pdj.GS.", names(viruses_load_15), sep="");
 # save(geneTraitSignificance_66, GSPadjust_66, geneModuleMembership_66, MMPadjust_66, file = "/results/geneTraitANDgeneMM_66.RData")
 ```
 
-### (4) GO-term enrichment analysis for varroa modules
+### (4) GO-term enrichment analysis for varroa modules (Tables S2-S10)
 
 Analysis based on [Tehcer et al. (2019)](https://www.nature.com/articles/s42003-019-0606-0)
 
