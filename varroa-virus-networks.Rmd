@@ -27,8 +27,8 @@ In the following code pipeline we present the (1) meta-transcriptomic analysis.
 
 Here we looked at the overall viral landscape in the different libraries, detected vector modules (co-expressing genes using gene-network analysis), and correlated the viruses’ abundance to the vector modules. Last, we tested if the virus abundance matrix can predict the virus-vector interaction.
 
-In this R markdown document we present the meta-transcriptomic analysis step by step in a way that can be reproduced using the input files available on the  [GitHub web-page](https://github.com/nurit-eliash/varroa-virus-networks).
-The following chunks are ordered as the sections in the Materials and Methods of the manuscript "Vector-virus interactions in multi-viral infection", [Eliash et al. (___)](DOI:___). All of the reffered tables and figures can be found in the Manuscript. 
+In this R markdown document we present the meta-transcriptomic analysis step by step in a way that can be reproduced using the input files available on the [GitHub web-page](https://github.com/nurit-eliash/varroa-virus-networks).
+The following chunks are ordered as the sections in the Materials and Methods of the manuscript "Diverse and rapidly evolving viral strategies modulate arthropod vector gene expression", [Eliash et al. (2022)](https://www.biorxiv.org/content/10.1101/2021.12.16.472853v1). All of the referred tables and figures can be found in the manuscript as well. 
 
 ---
 
@@ -345,7 +345,8 @@ virusAbundCor_66 <- corrplot2(
 ```
 
 ## Gene network analysis
-We used a network analysis approach to identify groups of genes that share a similar expression pattern across a large set of available varroa transcriptomic data (RNAseq). To construct the gene-network, a weighted gene co-expression analysis was carried out using the WGCNA package in R, following the authors’ tutorial ([Langfelder and Horvath 2016](https://horvath.genetics.ucla.edu/html/CoexpressionNetwork/Rpackages/WGCNA/Tutorials/); [Langfelder and Horvath 2008] (https://bmcbioinformatics.biomedcentral.com/articles/10.1186/1471-2105-9-559)). 
+We used a network analysis approach to identify groups of genes that share a similar expression pattern across a large set of available varroa transcriptomic data (RNAseq). To construct the gene-network, a weighted gene co-expression analysis was carried out using the WGCNA package in R, following the authors’ tutorial ([Langfelder and Horvath 2016](https://horvath.genetics.ucla.edu/html/CoexpressionNetwork/Rpackages/WGCNA/Tutorials/); [Langfelder and Horvath 2008](https://bmcbioinformatics.biomedcentral.com/articles/10.1186/1471-2105-9-559)). 
+
 The gene network analysis included 4 main steps: 
 
 1. Network construction and module detection 
@@ -356,7 +357,7 @@ The gene network analysis included 4 main steps:
 A gene co-expression network is a a systems-biology approach, based on the assumption that biological functions are carried out in a modular manner ([Barabási and Oltvai 2004](http://www.cs.cmu.edu/~epxing/Class/10810-06/readings/Barabasi_Oltvai_04.pdf)). We identify co-expressed genes that have similar expression patterns across samples using hierarchical clustering and place them in gene groups, called ‘modules’ ([Stuart et al. 2003](https://www.science.org/doi/10.1126/science.1087447)). 
 
 ### (1) Network construction and module detection
-Following the steps in WGCNA tutorial: "Automatic, one-step network construction and module detection"
+Following the steps in WGCNA tutorial: "Automatic, one-step network construction and module detection" ([Langfelder and Horvath 2016](https://horvath.genetics.ucla.edu/html/CoexpressionNetwork/Rpackages/WGCNA/Tutorials/))
 
 #### Choosing the soft-thresholding power: analysis of network topology (Figure S1a)
 For the varroa Gene network analysis we gonna use the "for_module" file created in the chunk "PCA" of section "Load data and library filtration". This data frame is the initial input for all the WGCNA, and contains the varroa genes TPM, where columns are genes' ID and rows are the RNAseq libraries   
