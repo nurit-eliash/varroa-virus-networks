@@ -1,9 +1,8 @@
-# Interactions with the vector shape viral communities
+# Diverse and rapidly evolving viral strategies modulate arthropod vector gene expression
 ## Nurit Eliash, Miyuki Suenaga and Alexander Mikheyev
-This project aims to understand how vector gene expression interacts with its viral load.
-### doi:___
+### DOI: https://doi.org/10.1101/2021.12.16.472853
 
 ### Supplementary material that includes code, original figures and tables can be found [here](https://nurit-eliash.github.io/varroa-virus-networks/).
 
 ### Abstract
-___
+Vector-borne viral diseases threaten human and wildlife worldwide. Vectors are often viewed as a passive syringe injecting the virus, however to survive, replicate and spread, viruses must manipulate vector biology. While most vector-borne viral research focuses on vectors transmitting a single virus, in reality vectors often carry diverse viruses. Yet how viruses affect the vectors remains poorly understood. Here we focused on the varroa mite, an emergent parasite that vectors over 20 honey bee viruses, and has been responsible for colony collapses worldwide, as well as changes in global viral populations. Co-evolution of the varroa and the viral community makes it possible to investigate whether viruses affect vector gene expression, and whether these interactions affect viral epidemiology. Using a large set of available varroa transcriptomes we identified how abundances of individual viruses affect the vector’s transcriptional network. Perhaps surprisingly, we found no evidence of competition between viruses, but rather that some virus abundances are positively correlated. Furthermore, we found a strong correlation between the extent to which a virus interacts with the vector’s gene expression and co-occurrence with other viruses, suggesting that interactions with the vector affect epidemiology. We experimentally validated this observation by silencing candidate genes using RNAi and found that reduction in varroa gene expression was accompanied by a change in viral load. Combined, the meta-transcriptomic analysis and experimental results shed light on the mechanism by which viruses interact with each other and with their vector to shape the disease course.
