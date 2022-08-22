@@ -2,34 +2,26 @@
 # from scripts.split_fasta_regions import split_fasta
 # from snakemake.utils import R
 
-# working dir: /flash/EconomoU/Nurit/network/work
+outDir = "data"   # symlink to /work
+refDir = "ref" 	  # symlink to /work
+SCRATCH  = "/work/scratch"
 
-readDir = "/bucket/EconomoU/Nurit/network/data"
-refDir = "/bucket/EconomoU/Nurit/network/ref"  # symlink to /work
-outDir = "/flash/EconomoU/Nurit/network/work/data"   # symlink to /work
-SCRATCH  = "scratch"
-
-kallistoIndex = refDir + "/Vdes_viruses.index"
-SINGLE = [line.rstrip() for line in open(refDir + "/single.txt")]
-PAIRED = [line.rstrip() for line in open(refDir + "/paired.txt")]
+kallistoIndex = "ref/Vdes_viruses"
+SINGLE = [line.rstrip() for line in open("ref/single.txt")]
+PAIRED = [line.rstrip() for line in open("ref/paired.txt")]
 
 localrules: all
-
-# run paired and sinlge libraries seperately, changing only the 'rule all':
-
-#rule all:
-	input: expand(outDir + "/kallistoP/{sample}/abundance.tsv", sample = PAIRED) # for the paired libraries
-
+	
 rule all:
-	input: expand(outDir + "/kallisto/{sample}/abundance.tsv", sample = SINGLE) # for the single libraries
-    
+	input: expand(outDir + "/kallisto/{sample}/abundance.tsv", sample = SINGLE )
+
 rule downloadSRAsingle:
 	output: outDir + "/reads/{sample}.fastq.gz"
 	resources: mem=1, time=60*24
 	wildcard_constraints: sample = '[A-Z0-9]+'
 	threads: 4
 	params: outdir = outDir + "/reads/"
-	conda: "envs/base.yaml"
+	#conda: "envs/base.yaml"
 	shell: "module load sratoolkit/2.8.0; parallel-fastq-dump --threads {threads} --tmpdir {SCRATCH} --outdir {params.outdir} --gzip --sra-id {wildcards.sample}"
 
 rule downloadSRApaired:
@@ -38,17 +30,18 @@ rule downloadSRApaired:
 	wildcard_constraints: sample = '[A-Z0-9]+'
 	threads: 4
 	params: outdir = outDir + "/reads/"
-	conda: "envs/base.yaml"
+	#conda: "envs/base.yaml"
 	shell: "module load sratoolkit/2.8.0; parallel-fastq-dump --tmpdir {SCRATCH} --threads {threads} --outdir {params.outdir} --gzip --split-files --sra-id {wildcards.sample}"
 
 rule trimSingle:
-	input: readDir + "/reads/{sample}.fastq.gz"
+	input: outDir + "/reads/{sample}.fastq.gz"
 	output: outDir + "/trimmed_reads/{sample}.fastq.gz"
 	resources: mem=5, time=60
 	wildcard_constraints: sample = '[A-Z0-9]+'
-	conda: "envs/base.yaml"
+	#conda: "envs/base.yaml"
 	threads: 1
 	shell: "AdapterRemoval --trimwindows 5 --minquality 20 --file1 {input} --output1 {output} --basename {outDir}/trimmed_reads/{wildcards.sample} --gzip --threads {threads}"
+
 
 rule kallistoSingle:
 	input: rules.trimSingle.output
@@ -59,17 +52,17 @@ rule kallistoSingle:
 		log = outDir + "/kallisto/{sample}.log"
 	wildcard_constraints: sample = '[A-Z0-9]+'
 	params: outdir = lambda wildcards: outDir + "/kallisto/" + wildcards.sample
-    conda: "envs/base.yaml"
+	#conda: "envs/base.yaml"
 	resources: mem=2, time=60
 	threads: 1
 	shell: "kallisto quant -b 100 -s 200 -l 350  -t {threads} --single -o {params.outdir} -i {kallistoIndex} {input} 2> {output.log}"
 
 rule trimPaired:
-	input: readDir + "/reads/{sample}_1.fastq.gz", readDir + "/reads/{sample}_2.fastq.gz"
+	input: outDir + "/reads/{sample}_1.fastq.gz", outDir + "/reads/{sample}_2.fastq.gz"
 	output: outDir + "/trimmed_reads/{sample}_1.fastq.gz", outDir + "/trimmed_reads/{sample}_2.fastq.gz"
 	resources: mem=5, time=60*3
 	wildcard_constraints: sample = '[A-Z0-9]+'
-	conda: "envs/base.yaml"
+	#conda: "envs/base.yaml"
 	threads: 4
 	shell: "AdapterRemoval --trimwindows 5 --minquality 20 --file1 {input[0]} --output1 {output[0]} --file2 {input[1]} --output2 {output[1]} --basename {outDir}/trimmed_reads/{wildcards.sample} --gzip --threads {threads}"
 
@@ -85,7 +78,7 @@ rule kallistoPaired:
 		log = outDir + "/kallistoP/{sample}.log"
 	wildcard_constraints: sample = '[A-Z0-9]+'
 	params: outdir = lambda wildcards: outDir + "/kallistoP/" + wildcards.sample
-	conda: "envs/base.yaml"
+	#conda: "envs/base.yaml"
 	resources: mem=2, time=180
 	threads: 4
 	shell: "kallisto quant -b 100 -t {threads} -o {params.outdir} -i {kallistoIndex} {input} 2> {output.log}"
