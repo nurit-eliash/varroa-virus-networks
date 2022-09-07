@@ -89,15 +89,3 @@ ggplot(RNAi, aes(module, fill = family)) + geom_bar() +
 #save the RNAi varroa genes and their module as csv
 write_csv(RNAi, "/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/varroa_RNAi_modules.csv")
 ```
-
-# plot the gene interaction with the different viruses 
-RNAi_tpm <- for_modules %>%
-  rownames_to_column("library") 
-
-#load the viruses load, per library
-viruses_load <- b_viruses_load %>%
-  rownames_to_column("library") 
-
-# make a new table with SRAs as rows, and viral loads and modules in the columns:
-dat <- left_join(viruses_load, Modules, by = "library") 
-

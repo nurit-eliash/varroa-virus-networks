@@ -94,18 +94,18 @@ The output data frame contains 35,669 isoforms of the selected 71 varroa librari
 ```{r dataframe, echo=TRUE, message=FALSE, warning=FALSE, eval=FALSE}
 # First make a function for making the mapped reads (output of kallisto) into a data frame
 read_kallisto <- function(filename) {
-  sampleName <- sub("data/kallisto/(.*).tsv.gz","\\1", filename)
+  sampleName <- sub("data/kallisto_old/(.*).tsv.gz","\\1", filename)
   return(read_tsv(filename) %>%
            dplyr::select(!!sampleName := tpm))
 }
 
 # now make the data frame, which contain all 71 libraries: 
-df_71 <- list.files(path = "data/kallisto", full.names = TRUE) %>% 
+df_71 <- list.files(path = "data/kallisto_old", full.names = TRUE) %>% 
   lapply(read_kallisto) %>% 
   bind_cols() 
 
 # add a column "target_id" with the isoform/virus ID
-df_71$target_id <- list.files(path = "data/kallisto", full.names = TRUE)[1] %>% 
+df_71$target_id <- list.files(path = "data/kallisto_old", full.names = TRUE)[1] %>% 
   read_tsv() %>% 
   dplyr::select(target_id) %>% 
   pull()
@@ -118,7 +118,7 @@ df_71$target_id <- list.files(path = "data/kallisto", full.names = TRUE)[1] %>%
 # Next, we join isoforms that belong to the same gene.
 
 # Load the data frame created in the former chunk 
-load(file = "/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/data/kallisto_71.rds")
+#load(file = "/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/data/kallisto_71.rds")
 
 # Import the varroa transcripts ("target_id") and their corresponding gene ("gene_id").
 varroa_isoforms <- read_tsv("/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/data/gene2isoform.txt.gz", col_names = c("gene_id", "target_id"))
@@ -144,7 +144,7 @@ Next, we perform Principle Component Analysis (PCA) on varroa genes, to detect o
 ### Detect outlier libraries based on PCA (Figure S2)
 ```{r Detect outlier based on PCA, message=FALSE, warning=FALSE}
 # load the table
-load(file = "/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/final_gene_tpm_71.rds")
+#load(file = "/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/final_gene_tpm_71.rds")
      
 # Before PCA, we transpose the table "final_gene_tpm_71", and transform (log10+0.000001) 
 final_gene_tpm_71_T<- transposeBigData(log10(final_gene_tpm_71 + 0.000001))
@@ -178,7 +178,7 @@ After filtering outlier libraries (based on PCA analysis), we used the left 66 S
 ### Remove outlier libraries and save data frame of varroa genes for later WGCNA
 ```{r Finnalized libraries for WGCNA,  echo=TRUE, message=FALSE, warning=FALSE}
 # We remove the five outlier libraries from the data frame, and save for subsequent analyses 
-load(file = "/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/data/kallisto_71.rds")
+#load(file = "/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/data/kallisto_71.rds")
 df <- df_71 %>% dplyr::select(-c("SRR5109825", "SRR5109827", "SRR533974" , "SRR3927496", "SRR8867385"))
 
 # In addition, we save the final varroa genes TPM values per library, of the filtered 66 libraries, for the Gene Network analysis.
@@ -196,7 +196,7 @@ AIM: describing viruses' abundance in the different varroa SRA libraries.
 We first prepare the suitable data frame containing viruses' load in each library, by joining the initial df, with viruses' IDs:
 ```{r Creat data frame of virus load, message=FALSE, warning=FALSE, eval=FALSE}
 # read the viruses IDs:
-virusId <- read_tsv("data/viruses.txt", col_names = c("target_id", "description"))
+virusId <- read_tsv("data/viruses_old.txt", col_names = c("target_id", "description"))
 
 # Varroa orthomyxovirus-1 (VOV-1) virus genome has been described in 6 different segments (Levin et al. 2016). Before proceeding for viral abundance analysis we sum all VOV-1 segments into one.
 virusId[3:8, 2] <- "VOV_1"
@@ -227,7 +227,7 @@ head(viruses_load)
 ```{r Heat-map of viruses loads per library (log10(tpm)), fig.cap = "Figure 1. Viral load is diverse across the different varroa libraries. Values are log10 transformed of the reads’ TPM (transcript per millions). Zero values are marked in grey (i.e., none of the reads in this library mapped to this virus). The viruses’ names are abbreviated as described in Table 1.  More information on the viruses’, accession numbers, genome length, references and etc. are available in supp table S1. Members of the Iflavirus family are the most prevalent, yet while some viruses are homogenous across libraries (VDV2), others are highly diverse (e.g. DWVa and DWVb).", fig.width = 10, fig.height = 13, message=FALSE, warning=FALSE}
 # (3) heat-map of viruses loads (log10(tpm)) per library
 # load the former virus data
-load(file = "/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/viruses_load.rds")
+#load(file = "/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/viruses_load.rds")
 # plot the viruses abundance in each library
 # make a vector of the new viruses order
 new_order <- c("DWVa", "VDV1/DWVb", "VDV2", "BMV","VOV_1","ARV_2", "DWVc", "AmFV", "VDV3", "ABPV", "VTLV", "SV", "BQCV","VDV4", "IAPV", "KBV", "SBPV", "LSV","CBPV" ,"AFV", "ANV", "VPVL_46","VPVL_36")
@@ -273,7 +273,7 @@ ggplot(data = virus_abund, mapping = aes(x = description,
 the viral correlation analysis includes 66 libraries, and 15 viruses (viruses that appear in at least one of the libraries)
 ```{r viral correlation, fig.cap = "Figure 2a. Correlation between viruses’ loads. P-values of the Pearson coefficient are adjusted according to FDR-correction; correlation significance marked by (*) 0.1 < Padjust < 0.01; (**) Padjust < 0.01. All viruses’ loads are transformed by log10 of the (TPM), Transcripts Per Million." , message=FALSE, warning=FALSE}
 
-load(file = "/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/viruses_load.rds")
+#load(file = "/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/viruses_load.rds")
 
 # prepare the 'viruses_load' table, with 15 viruses, 
 # excluding viruses with 'zero tpm': "CBPV", "AFV", "ANV" , "VPVL_46", "VPVL_36", "SBPV", also excluding viruses with low abundance :"KBV", "LSV".  left with 15 viruses
@@ -363,7 +363,7 @@ Following the steps in WGCNA tutorial: "Automatic, one-step network construction
 For the varroa Gene network analysis we gonna use the "for_module" file created in the chunk "PCA" of section "Load data and library filtration". This data frame is the initial input for all the WGCNA, and contains the varroa genes TPM, where columns are genes' ID and rows are the RNAseq libraries   
 ```{r Choosing the soft-thresholding power, message=FALSE, warning=FALSE}
 
-load(file = "/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/for_modules.rds")
+#load(file = "/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/for_modules.rds")
 
 # Take a look at the data frame (print 5 genes in 10 libraries): 
 head(for_modules[,1:5], 10)
@@ -425,7 +425,7 @@ Based on the analysis of network topology, for the construction of the network w
 The hierarchical clustering dendrogram (tree) used for the module identification is returned in net$dendrograms[[1]];
 The dendrogram can be displayed together with the color assignment using the following code
 ```{r Hierarchical clustering dendrogram, fig.cap = "Figure S2b. Network construction using 10,247 genes of 66 SRA varroa libraries. Hierarchical clustering dendrogram using merge cut height of 25%, revealing 15 co-expressed genes modules. Each branch of the dendrogram represents a single gene, and the colored bar below denotes its corresponding module, as annotated in the legend to the right. The dendrogram height is the distance between genes.", message=FALSE, warning=FALSE}
-net <- readRDS("/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/net.rds")
+#net <- readRDS("/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/net.rds")
 
 # Convert labels to colors for plotting
 mergedColors = labels2colors(net$colors)
@@ -451,13 +451,13 @@ To test if the varroa modules interact with the different viruses it carries, we
 # For correlating varroa modules to viral load, we gonna use the table of 15 viruses saved in chunk "viral correlation", in section "viral correlation matrix", and correlated these to the varroa modules eigengenes found in the previous chunk. 
 
 # First we load the two data:
-load("/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/viruses_load_15.rds")
+#load("/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/viruses_load_15.rds")
 # change the names of the viruses to match their common name in the literature:
 viruses_load_15 <- viruses_load_15 %>%
   dplyr::rename("VOV-1" = "VOV_1", "ARV-2"= "ARV_2", "SBV"= "SV", "DWVb"="VDV1/DWVb")
 
-load(file = "/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/Varroa_modules_networkConstruction-auto.RData")
-load(file = "/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/for_modules.rds")
+#load(file = "/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/Varroa_modules_networkConstruction-auto.RData")
+#load(file = "/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/for_modules.rds")
 
 # Define numbers of genes and samples
 nGenes = ncol(for_modules);
@@ -895,10 +895,10 @@ To test if we can predict the virus-varroa interaction given the virus abundance
 
 # load the two matrices:
 # the module–trait association matrix: 
-load(file = "/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/moduleTraitCor_66.RData")
+#load(file = "/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/moduleTraitCor_66.RData")
 
 # and the viral abundance correlogram:
-virusAbundCor_66 <- readRDS(file = "/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/virusAbundCor_66.rds")
+#virusAbundCor_66 <- readRDS(file = "/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/results/virusAbundCor_66.rds")
 virusAbundCor_66 <- virusAbundCor_66$corr
 
 # make correlation matrix of the "moduleTraitCor":

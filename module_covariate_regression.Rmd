@@ -30,22 +30,14 @@ library(changepoint)
 library(tibble)
 library(forcats)
 library(plotly)
+library(janitor)
 ```
 
-### set the directory and relevant files
+### set the directory and relevant files from scratch
 ```{r include=TRUE, paged.print=FALSE, echo=FALSE}
+alsjdhf;lkashdf;lhasdlhf
+for modules
 
-setwd("~/OneDrive - OIST/Repos/varroa-virus-networks")
-
-# Load the expression and trait data saved in the first part 
-lnames <- load(file = "varroa_virus-01-dataInput.RData"); 
-
-#The variable lnames contains the names of loaded variables. 
-lnames 
-
-# Load network data saved in the second part.
-lnames = load(file = "Varroa_modules_networkConstruction-auto.RData"); 
-lnames
 
 # Define numbers of genes and samples
 nGenes = ncol(for_modules);
@@ -55,56 +47,54 @@ MEs0 = moduleEigengenes(for_modules, moduleColors)$eigengenes
 MEs = orderMEs(MEs0)
 
 # read csv table with the factors you want to test for the module-cov Regression
-ModTraitFac <- read.csv("/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks/module_trait_factors.csv") 
+ModTraitFac <- read.csv("/Users/nuriteliash/Documents/GitHub/varroa-virus-networks/data/module_trait_factors.csv") 
 #%>%  column_to_rownames(var = "Library")
 
 ```
 
- PCAs of libraries, for each covariate, colored by the different covariate level:
+### PCAs of libraries, based on gene expression for each covariate, colored by the different covariate level:
 ```{r}
-
 # join the MEs and the ModTraitFac into one data.frame: "Modules_Covar" 
 MEs2 <- rownames_to_column(MEs, var = "Library")
 Modules_Covar <- left_join(MEs2, ModTraitFac, by = "Library")
 
-#plot PCA, for example - "mite stage" 
-
+#plot PCA 
 PC <- prcomp(MEs)
-PCi<-data.frame(PC$x,Stage=Modules_Covar$mite_stage)
 
-p <- autoplotly(ggplot(PCi,aes(x=PC1,y=PC2,col=Stage), dynamicTicks = TRUE, tooltip = "all")+
+####for example - "mite stage":####
+PCi <- data.frame(PC$x,Stage=Modules_Covar$mite_stage)
+autoplotly(ggplot(PCi,aes(x=PC1,y=PC2,col=Stage), dynamicTicks = TRUE, tooltip = "all")+
    geom_point(size=3,alpha=0.5)+ #Size and alpha just for fun
    scale_color_manual(values = c("#FF1BB3","#A7FF5B","#99554D", "#1AB2FF"))+ #your colors here
    theme_classic()+
      ggtitle("PCA of libraries based on eigengenes in different Mite's life stage"))
-p
 
-
--------------#for "bee sp" covariate:------
-PCi<-data.frame(PC$x, Species = Modules_Covar$bee_sp)
+###for "bee sp" covariate:####
+PCi <- data.frame(PC$x, Species = Modules_Covar$bee_sp)
 autoplotly(ggplot(PCi,aes(x=PC1,y=PC2,col=Species), dynamicTicks = TRUE, tooltip = "all")+
    geom_point(size=3,alpha=0.5)+ #Size and alpha just for fun
    scale_color_manual(values = c("#FF1BB3","#A7FF5B","#99554D", "#1AB2FF", "#1827FF"))+ #your colors here
    theme_classic()+
      ggtitle("PCA of libraries based on eigengenes in different bee species"))
 
--------------#for "mite sp" covariate:------
-PCi<-data.frame(PC$x, Species = Modules_Covar$mite_sp)
+####for "mite sp" covariate####
+PCi <- data.frame(PC$x, Species = Modules_Covar$mite_sp)
 autoplotly(ggplot(PCi,aes(x=PC1,y=PC2,col=Species), dynamicTicks = TRUE, tooltip = "all")+
    geom_point(size=3,alpha=0.5)+ #Size and alpha just for fun
    scale_color_manual(values = c("#FF1BB3","#A7FF5B","#99554D", "#1AB2FF", "#1827FF"))+ #your colors here
    theme_classic()+
      ggtitle("PCA of libraries based on eigengenes in different mite species"))
 
--------------#for "collect method" covariate:------
-PCi<-data.frame(PC$x, Collection_method = Modules_Covar$collec_method)
+####for "collect method" covariate:####
+PCi <- data.frame(PC$x, Collection_method = Modules_Covar$collec_method)
 autoplotly(ggplot(PCi,aes(x=PC1,y=PC2,col=Collection_method), dynamicTicks = TRUE, tooltip = "all")+
    geom_point(size=3,alpha=0.5)+ #Size and alpha just for fun
    scale_color_manual(values = c("#FF1BB3","#A7FF5B","#99554D", "#1AB2FF", "#1827FF"))+ #your colors here
    theme_classic()+
-     ggtitle("PCA of libraries based on eigengenes in different Collection method"))
+     ggtitle("PCA of libraries
+mites from different host stage"))
 
--------------#for "Lib_select" covariate:------
+####for "Lib_select" covariate:####
 PCi<-data.frame(PC$x, Lib_select = Modules_Covar$Lib_select)
 autoplotly(ggplot(PCi,aes(x=PC1,y=PC2,col=Lib_select), dynamicTicks = TRUE, tooltip = "all")+
    geom_point(size=3,alpha=0.5)+ #Size and alpha just for fun
@@ -112,7 +102,7 @@ autoplotly(ggplot(PCi,aes(x=PC1,y=PC2,col=Lib_select), dynamicTicks = TRUE, tool
    theme_classic()+
      ggtitle("PCA of libraries based on eigengenes in different library selection"))
 
--------------#for "Lib_treat" covariate:------
+### for "Lib_treat" covariate:####
 PCi<-data.frame(PC$x, Lib_treat = Modules_Covar$Lib_treat)
 autoplotly(ggplot(PCi,aes(x=PC1,y=PC2,col=Lib_treat), dynamicTicks = TRUE, tooltip = "all")+
    geom_point(size=3,alpha=0.5)+ #Size and alpha just for fun
@@ -121,23 +111,78 @@ autoplotly(ggplot(PCi,aes(x=PC1,y=PC2,col=Lib_treat), dynamicTicks = TRUE, toolt
      ggtitle("PCA of libraries based on eigengenes in different library treatment"))
 ```
 
+# Were any differences observed between virus compositions in the brood-collected and adult bee-collected mites?
+### read the viral load per library
+```{r}
+# First make a function for making the mapped reads (output of kallisto) into a data frame
+read_kallisto <- function(filename) {
+  sampleName <- sub("data/kallisto/(.*).tsv.gz","\\1", filename)
+  return(read_tsv(filename) %>%
+           dplyr::select(!!sampleName := tpm))
+}
 
+# now make the data frame, which contain all 71 libraries: 
+df_71 <- list.files(path = "data/kallisto", full.names = TRUE) %>% 
+  lapply(read_kallisto) %>% 
+  bind_cols() 
 
+# add a column "target_id" with the isoform/virus ID
+df_71$target_id <- list.files(path = "data/kallisto", full.names = TRUE)[1] %>%
+  read_tsv() %>% 
+  dplyr::select(target_id) %>% 
+  pull()
 
-```{r eval=FALSE, include=FALSE}
-#dont run - i need to figure out how to change the Hover Text for each dot, so it will show the name of the specific library
-----------
-  
-p <- plot_ly(type = 'scatter', mode = 'markers') 
-fig <- fig %>%
-  add_trace(
-    x = c(1:100), 
-    y = rnorm(100, mean = 5), 
-    marker = list(color='green'),
-    hoverinfo = 'Modules_Covar$',
-    showlegend = F
-  ) 
+# read the viruses IDs:
+virusId <- read_tsv("data/viruses.txt", col_names = c("target_id", "description"))
+
+# Varroa orthomyxovirus-1 (VOV-1) virus genome has been described in 6 different segments (Levin et al. 2016). Before proceeding for viral abundance analysis we sum all VOV-1 segments into one.
+virusId[4:8, 2] <- "VOV_1"
+x <- left_join(virusId, df, by = "target_id") %>% dplyr::select(-target_id) 
+# Sum all 6 segments TPM in each library in a separate table 'VOV_1':
+VOV_1 <- x %>% 
+      dplyr::slice(4:8) %>%
+      group_by(description) %>%
+      summarize_all(sum)
+#filter out the segments of VOV_1,  
+x <- dplyr::filter(x, description != "VOV_1")
+# insert VOV_1 in row 3 
+r <- 4
+insertRow <- function(x, VOV_1, r) {
+  x[seq(r+1,nrow(x)+1),] <- x[seq(r,nrow(x)),]
+  x[r,] <- VOV_1
+  x
+}
+
+viruses_load <- insertRow(x, VOV_1, r)
 ```
+
+### PCAs of libraries, based on *viral load* for each covariate, colored by the different covariate level:
+```{r}
+virus <- viruses_load %>% t() %>% row_to_names(row_number = 1) %>% as.data.frame() %>% mutate_all(funs(as.numeric(as.factor(.))))
+
+Virus_Covar <- left_join(rownames_to_column(virus,"Library"), ModTraitFac, by = "Library")
+
+#plot PCA 
+PCvirus <- prcomp(virus)
+
+####"mite stage":####
+PCi <- data.frame(PCvirus$x,Stage=Virus_Covar$mite_stage)
+autoplotly(ggplot(PCi,aes(x=PC1,y=PC2,col=Stage), dynamicTicks = TRUE, tooltip = "all")+
+   geom_point(size=3,alpha=0.5)+ #Size and alpha just for fun
+   scale_color_manual(values = c("#FF1BB3","#A7FF5B","#99554D", "#1AB2FF","#1AB3FF"))+ #your colors here
+   theme_classic()+
+     ggtitle("PCA of libraries based on eigengenes in different Mite's life stage"))
+
+####"host stage":####
+PCi <- data.frame(PCvirus$x, Collection_method = Virus_Covar$collec_method)
+autoplotly(ggplot(PCi,aes(x=PC1,y=PC2,col=Collection_method), dynamicTicks = TRUE, tooltip = "all")+
+   geom_point(size=3,alpha=0.5)+ #Size and alpha just for fun
+   scale_color_manual(values = c("#FF1BB3","#A7FF5B","#99554D", "#1AB2FF", "#1827FF"))+ #your colors here
+   theme_classic()+
+     ggtitle("PCA of viral load in varroa libraries
+mites collected from different host stages"))
+```
+
 ### run regression analysis for each pair of module ~ covariate (15 x 6)
 ```{r warning=FALSE}
 #make a function that takes variables: x, y and "lable", runs lm(y~x), and returns a dataframe with the desired parameters

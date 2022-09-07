@@ -1,0 +1,353 @@
+---
+title: "silenced-genes-revision"
+author: "Nurit Eliash"
+date: '2022-08-23'
+output:
+  html_document:
+    theme: paper
+    toc: yes
+    toc_depth: 5
+    toc_float:
+      collapsed: yes
+      df_print: paged
+---
+*NOTE* first run: 
+"varroa virus networks.Rmd"
+"varroa_modules".rmd  
+"varroa_modules_females.rmd"
+
+```{r data storage, eval=FALSE, include=FALSE}
+library("data.table")
+library("dplyr")
+library("tidyverse")
+library("vegan")
+library("DESeq2")
+library("ggfortify")
+library("WGCNA")
+library("rmarkdown")
+library("knitr") # for the markdown
+library("kableExtra") # for creating a scrolling table
+library("ggplot2") # for plotting 
+library("ape") # for reading the phylogenetic tree and for mantel.test
+library("AnnotationDbi")
+library("GOstats")
+library("grid")
+library("gridExtra")
+library("DEGreport")
+
+setwd("/Users/nuriteliash/Documents/GitHub/varroa-virus-networks")
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+as intramodular connectivity (KIn) and module membership (MM) are positivly and linearly correlated, 
+similarly, we can plot the interaction of the geneTraitSignificance to the intramodular connectivity for each gene.
+ 
+## 7. Module membership, intramodular connectivity and screening for intramodular hub genes
+[link for the tutorial](https://horvath.genetics.ucla.edu/html/CoexpressionNetwork/Rpackages/WGCNA/Tutorials/Simulated-07-Membership.pdf) 
+### 7.a Intramodular connectivity
+We begin by calculating the intramodular connectivity for each gene. (In network literature, connectivity is often referred to as ”degree”.) The function intramodularConnectivity computes the whole network connectivity kTotal, the within module connectivity kWithin, kOut=kTotal-kWithin, and kDiff=kIn-kOut=2*kIN-kTotal.  
+```{r eval=F, echo=T}
+# calculate the correlation between each pair of genes 
+ADJ1_66 <- abs(cor(for_modules,use="p"))^6
+# compute the different degrees of connectivity:
+Alldegrees1_66 <- intramodularConnectivity(ADJ1_66, moduleColors)
+head(Alldegrees1_66)
+```
+
+## (2) to which module the silenced genes belong to?
+```{r, modules of silenced-genes, message=FALSE, warning=FALSE}
+# prepare a table describing each gene number, short-name and full annotation, of the silenced genes:
+genes <- as.factor(c("111250594", "111244103","111244832", "111248360", "111245345", "111248674", "111251059", "111245371", "111244631", "111252566", "111249664"))
+annot <- as.factor(c("Sarcalumenin", "glycerol-3-phosphate dehydrogenase", "Calmodulin", "Cuticle-protein8","Cuticle-protein-14", "Glutamate-receptor-3", "Glutamate-gated-chloride-channel-subunit-beta", "Organic-cation-transporter-protein", "Twitchin", "Annulin", "Defense-protein-Hdd11"))
+ShortName <- as.factor(c("Sar", "Gly","clmd", "CuP8", "CuP14", "Glut", "Chl", "Trans", "Twitch", "Anl", "HDD"))
+silenced.genes <- data.frame(genes, ShortName, annot)
+
+#make a data.frame of all genes with modules:
+all.genes.66 <- data.frame(
+  module = moduleColors,
+  geneTraitSignificance_66,
+  GSPadjust_66,
+  geneModuleMembership_66,
+  MMPadjust_66,
+  IntraModCon = Alldegrees1_66$kWithin) %>%
+  rownames_to_column("genes")
+
+# to what module the silenced genes belong to?
+silenced_overlap.66 <- left_join(silenced.genes, all.genes.66, by = "genes") %>%
+  dplyr::select(c("genes","ShortName","annot" ,"module", "MMblack", "MMyellow","padj.MMblack","padj.MMyellow", "GS.DWVa", "pdj.GS.DWVa" ))
+
+#write_csv(x = as.data.frame(silenced_overlap.66), "results/silenced_genes_info.csv")
+```
+* 10 of the 11 silenced-genes belong to the Black module, module 7.  
+* all have negative interaction with DWVa. 
+ 
+ ***
+
+but we have no choice now, as we already silenced these 11 genes. 
+so we need to know if the silencing effect on the viral load suit the prediction of the module-virus interaction.
+for that, we need to know: 
+
+*(1) the prediction of the network analysis for the virus-module interaction* (virus tpm - module eigengene), which is actually “module-trait interaction”
+*(2) the connectivity of each gene to their module* (eigengene - gene tpm)
+*(3) the specific virus-gene interaction* (virus tpm - gene tpm), which is GeneSignificance 
+
+# Pairwise correlations of Viral load, Module eigengenes and Gene expression:
+
+## (1) the prediction of the network analysis for the virus-module interaction
+virus - module (virus tpm - module eigengene). 
+```{r, from the chunk of WGCNA 3.a Quantifying module–trait associations: 66, message=FALSE, warning=FALSE}
+# first Recalculate MEs with color labels 
+MEs0 = moduleEigengenes(for_modules, moduleColors)$eigengenes
+MEs = orderMEs(MEs0)
+
+sizeGrWindow(10,6)
+# Will display correlations and their p-values
+textMatrix = paste(signif(moduleTraitCor_66, 2), "\n(",
+                   signif(moduleTraitPadjust_66, 1), ")", sep = "");
+dim(textMatrix) = dim(moduleTraitCor_66)
+par(mar = c(6, 8.5, 3, 3));
+# Display the correlation values within a heatmap plot
+labeledHeatmap(Matrix = moduleTraitCor_66,
+               xLabels = names(b_viruses_load),
+               yLabels = names(MEs),
+               ySymbols = names(MEs),
+               colorLabels = FALSE,
+               colors = blueWhiteRed(50),
+               textMatrix = textMatrix,
+               setStdMargins = FALSE,
+               cex.text = 0.7,
+               zlim = c(-1,1),
+               main = paste("Varroa Module-viruses relationships, all 66 libraries"))
+```
+
+## (2) the connectivity of each gene to their module
+Module - gene correlation (eigengene - gene tpm)
+```{r,  Module - gene correlation, emessage=FALSE, warning=FALSE}
+# make expression (tpm) of all silenced genes
+genes <- as.factor(c("111250594", "111244103","111244832", "111248360", "111245345", "111248674", "111251059", "111245371", "111244631", "111252566", "111249664"))
+
+silenced_exp <- for_modules %>%
+  dplyr::select(genes)  %>%
+  rownames_to_column("Library")
+
+# make table of eigengens of the silenced genes
+# first Recalculate MEs with color labels 
+MEs0 = moduleEigengenes(for_modules, moduleColors)$eigengenes
+MEs = orderMEs(MEs0)
+
+Sil_MEs <- as.character(c("MEblack", "MEyellow"))
+
+silenced_MEs <- MEs %>%
+  dplyr::select(all_of(Sil_MEs)) %>%
+  rownames_to_column("Library")
+  
+# correlate gene expression (for each of the silenced genes) with eigengenes (of the gene to its module). 
+geneMEcor <- as.matrix(cor(column_to_rownames(silenced_exp, "Library"), column_to_rownames(silenced_MEs, "Library"), "p"))
+
+plot <- left_join(silenced_MEs, silenced_exp, by = "Library")
+
+# plot the correlation of each gene and its MEs
+GlyBlack <- ggplot(plot, aes(x=plot$"111244103", y=MEblack)) + 
+         geom_point() +
+  geom_cor(method = "pearson", xpos = 1) +
+  xlab("Gly gene expression (tpm)") + 
+  ylab("Black MEs)") +
+    ggtitle("Gly expression correlation\n to Black ME") +
+      theme(
+        plot.title = element_text(color="black", size=14, face="bold"),
+        axis.title.x = element_text(color="black", size=14),
+        axis.title.y = element_text(color="black", size=14))
+
+SarBlack <- ggplot(plot, aes(x=plot$"111250594", y=MEblack)) + 
+         geom_point() +
+  geom_cor(method = "pearson", xpos = 1) +
+  xlab("Sar gene expression (tpm)") + 
+  ylab("Black MEs)") +
+    ggtitle("Sar expression correlation\n to Black ME") +
+      theme(
+        plot.title = element_text(color="black", size=14, face="bold"),
+        axis.title.x = element_text(color="black", size=14),
+        axis.title.y = element_text(color="black", size=14))
+
+clmdBlack <- ggplot(plot, aes(x=plot$"111244832", y=MEblack)) + 
+         geom_point() +
+  geom_cor(method = "pearson", xpos = 1) +
+  xlab("clmd gene expression (tpm)") + 
+  ylab("Black MEs)") +
+    ggtitle("clmd expression correlation\n to Black ME") +
+      theme(
+        plot.title = element_text(color="black", size=14, face="bold"),
+        axis.title.x = element_text(color="black", size=14),
+        axis.title.y = element_text(color="black", size=14))
+
+CuP8Black <- ggplot(plot, aes(x=plot$"111248360", y=MEblack)) + 
+         geom_point() +
+  geom_cor(method = "pearson", xpos = 1) +
+  xlab("CuP8 gene expression (tpm)") + 
+  ylab("Black MEs)") +
+    ggtitle("CuP8 expression correlation\n to Black ME") +
+      theme(
+        plot.title = element_text(color="black", size=14, face="bold"),
+        axis.title.x = element_text(color="black", size=14),
+        axis.title.y = element_text(color="black", size=14))
+
+CuP14Black <- ggplot(plot, aes(x=plot$"111245345", y=MEblack)) + 
+         geom_point() +
+  geom_cor(method = "pearson", xpos = 1) +
+  xlab("CuP14 gene expression (tpm)") + 
+  ylab("Black MEs)") +
+    ggtitle("CuP14 expression correlation\n to Black ME") +
+      theme(
+        plot.title = element_text(color="black", size=14, face="bold"),
+        axis.title.x = element_text(color="black", size=14),
+        axis.title.y = element_text(color="black", size=14))
+
+GlutBlack <- ggplot(plot, aes(x=plot$"111248674", y=MEblack)) + 
+         geom_point() +
+  geom_cor(method = "pearson", xpos = 1) +
+  xlab("Glut gene expression (tpm)") + 
+  ylab("Black MEs)") +
+    ggtitle("Glut expression correlation\n to Black ME") +
+      theme(
+        plot.title = element_text(color="black", size=14, face="bold"),
+        axis.title.x = element_text(color="black", size=14),
+        axis.title.y = element_text(color="black", size=14))
+
+ChlBlack <- ggplot(plot, aes(x=plot$"111251059", y=MEblack)) + 
+         geom_point() +
+  geom_cor(method = "pearson", xpos = 1) +
+  xlab("Chl gene expression (tpm)") + 
+  ylab("Black MEs)") +
+    ggtitle("Chl expression correlation\n to Black ME") +
+      theme(
+        plot.title = element_text(color="black", size=14, face="bold"),
+        axis.title.x = element_text(color="black", size=14),
+        axis.title.y = element_text(color="black", size=14))
+
+
+TwitchBlack <- ggplot(plot, aes(x=plot$"111244631", y=MEblack)) + 
+         geom_point() +
+  geom_cor(method = "pearson", xpos = 1) +
+  xlab("Twitch gene expression (tpm)") + 
+  ylab("Black MEs)") +
+    ggtitle("Twitch expression correlation\n to Black ME") +
+      theme(
+        plot.title = element_text(color="black", size=14, face="bold"),
+        axis.title.x = element_text(color="black", size=14),
+        axis.title.y = element_text(color="black", size=14))
+
+HDDBlack <- ggplot(plot, aes(x=plot$"111249664", y=MEblack)) + 
+         geom_point() +
+  geom_cor(method = "pearson", xpos = 1) +
+  xlab("HDD gene expression (tpm)") + 
+  ylab("Black MEs)") +
+    ggtitle("HDD expression correlation\n to Black ME") +
+      theme(
+        plot.title = element_text(color="black", size=14, face="bold"),
+        axis.title.x = element_text(color="black", size=14),
+        axis.title.y = element_text(color="black", size=14))
+
+AnlBlack <- ggplot(plot, aes(x=plot$"111252566", y=MEblack)) + 
+         geom_point() +
+  geom_cor(method = "pearson", xpos = 1) +
+  xlab("Anl gene expression (tpm)") + 
+  ylab("Black MEs)") +
+    ggtitle("Anl expression correlation\n to Black ME") +
+      theme(
+        plot.title = element_text(color="black", size=14, face="bold"),
+        axis.title.x = element_text(color="black", size=14),
+        axis.title.y = element_text(color="black", size=14))
+
+TransYellow <- ggplot(plot, aes(x=plot$"111245371", y=MEyellow)) + 
+         geom_point() +
+  geom_cor(method = "pearson", xpos = 1) +
+  xlab("Trans gene expression (tpm)") + 
+  ylab("Yellow MEs)") +
+    ggtitle("Trans expression correlation\n to Yellow ME") +
+      theme(
+        plot.title = element_text(color="black", size=14, face="bold"),
+        axis.title.x = element_text(color="black", size=14),
+        axis.title.y = element_text(color="black", size=14))
+
+
+# all Black-module genes:
+sizeGrWindow(20,10)
+grid.arrange(GlyBlack, clmdBlack, CuP8Black, CuP14Black, GlutBlack, ChlBlack,  TwitchBlack, HDDBlack, nrow = 2)
+# all yellow-module genes:
+grid.arrange(TransYellow, nrow = 1)
+```
+
+## (3) the specific virus-gene interaction. 
+Virus > gene (virus tpm > gene tpm), which is GeneSignificance. 
+```{r, virus-gene correlation, emessage=FALSE, warning=FALSE}
+# upload the viruses load
+#viruses_load <- read_rds("/Users/nuriteliash/OneDrive - OIST/Repos/varroa-virus-networks-Local/results/viruses_load.RData")
+viruses <- viruses_load %>%
+  column_to_rownames("description") %>%
+  transposeBigData() %>%
+   dplyr::select(c("DWVa", "VDV2", "ARV-2")) %>%
+   rownames_to_column("Library")
+#%>% add_column(logDWVa = log(viruses$DWVa))
+
+# make a correlation data frame between the 3 viruses and the 11 genes:
+# put back the library as row_name
+silenced_exp_1 <- silenced_exp %>%
+  setnames(old = as.vector(genes), new = as.vector(ShortName)) %>%
+  column_to_rownames("Library")
+
+viruses_1 <- viruses %>%
+  column_to_rownames("Library")
+
+# Define numbers of genes and samples
+nSamples = nrow(silenced_exp_1)
+
+geneVirusCor <- cor(silenced_exp_1, viruses_1, "p")
+geneVirusPvalue <- corPvalueStudent(geneVirusCor, nSamples) %>%
+  as.data.frame() 
+
+### Controlling the false discovery rate: Benjamini–Hochberg procedure ###
+# using p.adjust function, for all comparisons, 11 genes and 3 viruses (m=33). 
+
+#  "gather" all the p-values, so they will apear in one column
+longer_Pvalue <- geneVirusPvalue %>% 
+  rownames_to_column("genes") %>%
+  gather("virus", "pvalue", -genes)
+
+# now calculate the p.adjust for each p-value 
+Padjust <- p.adjust(longer_Pvalue$pvalue, method = "fdr")
+
+# and add the column of adjusted pvalues
+Padjust <- add_column(longer_Pvalue, Padjust)
+
+# now spread it back
+geneVirusPadjust <- Padjust %>% 
+  dplyr::select(-pvalue) %>% 
+  group_by(virus) %>%
+  pivot_wider(names_from = virus, values_from = Padjust)
+geneVirusPadjust <- column_to_rownames(geneVirusPadjust, "genes")
+
+# before correlating, make the two dataframes into "matrices"
+geneVirusCor <- as.matrix(geneVirusCor)
+geneVirusPadjust <- as.matrix(geneVirusPadjust)
+
+# make a heat map of the correlation coefficients:
+
+sizeGrWindow(10,6)
+# Will display correlations and their p-values
+textMatrix = paste(signif(geneVirusCor, 2), "\n(",
+                   signif(geneVirusPadjust, 1), ")", sep = "");
+dim(textMatrix) = dim(geneVirusCor)
+par(mar = c(6, 8.5, 3, 3));
+# Display the correlation values within a heatmap plot
+labeledHeatmap(Matrix = geneVirusCor,
+               xLabels = names(viruses_1),
+               yLabels = names(silenced_exp_1),
+               ySymbols = names(silenced_exp_1),
+               colorLabels = FALSE,
+               colors = blueWhiteRed(50),
+               textMatrix = textMatrix,
+               setStdMargins = FALSE,
+               cex.text = 0.7,
+               zlim = c(-1,1),
+               main = paste("Varroa genes-viruses relationships"))
+```
